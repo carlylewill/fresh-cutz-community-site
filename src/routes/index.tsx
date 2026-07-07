@@ -901,12 +901,21 @@ function Visit() {
           <div className="reveal space-y-8 rounded-2xl border border-border bg-card p-8">
             <div>
               <p className="eyebrow text-bone/50">Address</p>
-              <p className="mt-2 font-display text-2xl">{ADDRESS}</p>
+              <a
+                id="directions-button"
+                href={DIRECTIONS_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-2 block font-display text-2xl text-bone hover:text-brass"
+              >
+                {ADDRESS}
+              </a>
+              <p className="mt-2 text-sm text-bone/60">Tap for directions in Google Maps.</p>
             </div>
             <div className="grid gap-8 sm:grid-cols-2">
               <div>
                 <p className="eyebrow text-bone/50">Phone</p>
-                <a href={PHONE_TEL} className="mt-2 block font-display text-2xl text-brass hover:underline">
+                <a href={PHONE_HREF_RAW} className="mt-2 block font-display text-2xl text-brass hover:underline">
                   {PHONE_DISPLAY}
                 </a>
               </div>
