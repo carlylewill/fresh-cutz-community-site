@@ -566,48 +566,6 @@ function ScissorsMark({ className = "" }: { className?: string }) {
   );
 }
 
-function BarberChairIllustration() {
-  return (
-    <svg viewBox="0 0 400 460" className="h-full w-full" fill="none" aria-hidden>
-      <defs>
-        <linearGradient id="chairGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="oklch(0.78 0.13 82)" stopOpacity="0.15" />
-          <stop offset="100%" stopColor="oklch(0.48 0.16 25)" stopOpacity="0.05" />
-        </linearGradient>
-      </defs>
-      <rect x="0" y="0" width="400" height="460" fill="url(#chairGrad)" rx="24" />
-      {/* mirror */}
-      <rect x="60" y="40" width="280" height="150" rx="140" stroke="oklch(0.78 0.13 82)" strokeWidth="1.5" />
-      <path d="M110 100 Q200 60 290 100" stroke="oklch(0.78 0.13 82)" strokeWidth="1" opacity="0.5" />
-      {/* counter */}
-      <line x1="30" y1="220" x2="370" y2="220" stroke="oklch(0.78 0.13 82)" strokeWidth="1.5" />
-      {/* bottles */}
-      <rect x="90" y="185" width="14" height="35" rx="2" stroke="oklch(0.78 0.13 82)" strokeWidth="1.2" />
-      <rect x="115" y="175" width="14" height="45" rx="2" stroke="oklch(0.78 0.13 82)" strokeWidth="1.2" />
-      <circle cx="260" cy="205" r="10" stroke="oklch(0.48 0.16 25)" strokeWidth="1.4" />
-      {/* chair base */}
-      <path
-        d="M120 420 L120 340 Q120 280 200 280 Q280 280 280 340 L280 420"
-        stroke="oklch(0.78 0.13 82)"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <path d="M140 330 L260 330" stroke="oklch(0.78 0.13 82)" strokeWidth="1.2" />
-      <path d="M200 280 L200 250" stroke="oklch(0.78 0.13 82)" strokeWidth="2" />
-      <path
-        d="M170 250 Q200 235 230 250"
-        stroke="oklch(0.48 0.16 25)"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-      />
-      <line x1="90" y1="440" x2="310" y2="440" stroke="oklch(0.78 0.13 82)" strokeWidth="1.5" />
-      {/* stars */}
-      <circle cx="70" cy="70" r="1.5" fill="oklch(0.78 0.13 82)" />
-      <circle cx="330" cy="60" r="1.5" fill="oklch(0.78 0.13 82)" />
-      <circle cx="350" cy="140" r="1.5" fill="oklch(0.78 0.13 82)" />
-    </svg>
-  );
-}
 
 function CoilyPattern() {
   return (
