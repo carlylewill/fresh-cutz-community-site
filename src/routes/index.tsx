@@ -364,17 +364,20 @@ function HairTypes() {
   const types = [
     {
       label: "Afro / Coily",
-      note: "Fades, shape-ups, tapers, sponge twists — cut with the grain of your curl pattern.",
+      note: "Fades, shape-ups, tapers, sponge twists — an afro hair barber in Harrow cutting with the grain of your curl pattern.",
+      alt: "Illustration of coily afro hair pattern — afro hair barber Harrow, Fresh Cutz Wealdstone",
       draw: <CoilyPattern />,
     },
     {
       label: "Asian / Straight",
-      note: "Clean lines, textured crops, scissor work that respects thick, straight hair.",
+      note: "Clean lines, textured crops, scissor work — Asian hair specialist Harrow, patient with thick, straight hair.",
+      alt: "Illustration of straight Asian hair pattern — Asian hair specialist Harrow, Fresh Cutz Wealdstone",
       draw: <StraightPattern />,
     },
     {
       label: "Caucasian / Wavy",
-      note: "Skin fades, classic side parts, modern crops — precision blends and finish.",
+      note: "Skin fades, classic side parts, modern crops — precision blends for wavy and straight European hair.",
+      alt: "Illustration of wavy Caucasian hair pattern — barber in Wealdstone, Harrow",
       draw: <WavyPattern />,
     },
   ];
@@ -384,11 +387,12 @@ function HairTypes() {
         <div className="reveal max-w-2xl">
           <p className="eyebrow text-brass">The signature</p>
           <h2 className="mt-4 font-display text-4xl font-semibold sm:text-5xl">
-            We welcome <span className="italic text-brass">all</span> hair types.
+            A barber in Wealdstone for <span className="italic text-brass">all</span> hair types.
           </h2>
           <p className="mt-4 text-bone/75">
-            Most shops quietly specialise in one texture. We don't. Three textures, one chair — and the technique to match whichever
-            one walks in.
+            Most shops quietly specialise in one texture. We don't. Afro hair barber, Asian hair
+            specialist and Caucasian hair — three textures, one chair, and the technique to match
+            whichever one walks in.
           </p>
         </div>
         <div className="mt-14 grid gap-6 md:grid-cols-3">
@@ -397,11 +401,15 @@ function HairTypes() {
               key={t.label}
               className="reveal group relative overflow-hidden rounded-2xl border border-border bg-background p-6"
             >
-              <div className="aspect-[4/3] overflow-hidden rounded-xl bg-charcoal-2">
+              <div
+                className="aspect-[4/3] overflow-hidden rounded-xl bg-charcoal-2"
+                role="img"
+                aria-label={t.alt}
+              >
                 {t.draw}
               </div>
               <p className="eyebrow mt-6 text-brass">{t.label}</p>
-              <p className="mt-2 font-display text-2xl font-semibold">Cut with the grain.</p>
+              <h3 className="mt-2 font-display text-2xl font-semibold">Cut with the grain.</h3>
               <p className="mt-2 text-sm text-bone/70">{t.note}</p>
             </article>
           ))}
