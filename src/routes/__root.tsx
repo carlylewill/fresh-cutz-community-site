@@ -77,20 +77,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Fresh Cutz Barbers — Wealdstone, Harrow" },
-      {
-        name: "description",
-        content:
-          "Fresh Cutz Barbers in Wealdstone, Harrow. Expert cuts for all hair types — Afro, Asian and Caucasian. Est. 2009. Book with Baggio or Rahul.",
-      },
       { name: "author", content: "Fresh Cutz Barbers" },
-      { property: "og:title", content: "Fresh Cutz Barbers — Wealdstone, Harrow" },
-      {
-        property: "og:description",
-        content:
-          "We welcome all hair types. Patient, precise cuts in Wealdstone, Harrow since 2009.",
-      },
       { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "Fresh Cutz Barbers" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
