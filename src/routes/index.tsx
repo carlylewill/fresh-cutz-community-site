@@ -520,6 +520,269 @@ function Services() {
   );
 }
 
+/* ---------------- Gallery (Inside Fresh Cutz) ---------------- */
+function Gallery() {
+  const slots: { label: string; alt: string; span?: string }[] = [
+    {
+      label: "[Add photo: shopfront on Canning Road]",
+      alt: "Fresh Cutz Barbers shopfront, 18 Canning Road, Wealdstone Harrow",
+      span: "sm:col-span-2 sm:row-span-2",
+    },
+    {
+      label: "[Add photo: Baggio cutting a fade]",
+      alt: "Baggio the barber cutting a skin fade at Fresh Cutz, Wealdstone Harrow",
+    },
+    {
+      label: "[Add photo: Rahul finishing a scissor cut]",
+      alt: "Rahul, Asian hair specialist, finishing a scissor cut at Fresh Cutz Harrow",
+    },
+    {
+      label: "[Add photo: kids' first haircut]",
+      alt: "Kids' first haircut at Fresh Cutz Barbers, Wealdstone Harrow",
+    },
+    {
+      label: "[Add photo: finished afro shape-up]",
+      alt: "Finished afro shape-up by a Harrow afro hair barber",
+    },
+    {
+      label: "[Add photo: shop interior chairs & mirrors]",
+      alt: "Inside Fresh Cutz Barbers — chairs and mirrors, Wealdstone Harrow",
+    },
+  ];
+  return (
+    <section id="gallery" className="py-24">
+      <div className="mx-auto max-w-6xl px-5">
+        <div className="reveal max-w-2xl">
+          <p className="eyebrow text-brass">Inside the shop</p>
+          <h2 className="mt-4 font-display text-4xl font-semibold sm:text-5xl">
+            Inside Fresh Cutz.
+          </h2>
+          <p className="mt-4 text-bone/75">
+            Real photos of the shop, the barbers and the cuts — dropping in soon.
+          </p>
+        </div>
+        <div className="reveal mt-10 grid auto-rows-[minmax(0,1fr)] grid-cols-2 gap-4 sm:grid-cols-4">
+          {slots.map((s) => (
+            <figure
+              key={s.label}
+              className={`relative aspect-[4/3] overflow-hidden rounded-xl border border-border bg-charcoal-2 ${s.span ?? ""}`}
+            >
+              {/* TODO: Replace with <img src="..." alt="..." /> — keep alt text descriptive */}
+              <div
+                role="img"
+                aria-label={s.alt}
+                className="grid h-full w-full place-items-center p-4 text-center text-xs text-bone/50"
+              >
+                {s.label}
+              </div>
+            </figure>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------------- Instagram Feed (Recent Cuts) ---------------- */
+function InstagramFeed() {
+  return (
+    <section id="recent-cuts" className="border-y border-border/60 bg-charcoal-2/60 py-24">
+      <div className="mx-auto max-w-6xl px-5">
+        <div className="reveal flex flex-wrap items-end justify-between gap-4">
+          <div className="max-w-xl">
+            <p className="eyebrow text-brass">Recent cuts</p>
+            <h2 className="mt-4 font-display text-4xl font-semibold sm:text-5xl">
+              Straight from the chair.
+            </h2>
+            <p className="mt-3 text-bone/75">
+              The latest work, pulled live from{" "}
+              <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="text-brass hover:underline">
+                @fresh.cutz.barbers
+              </a>
+              .
+            </p>
+          </div>
+          <a
+            href={INSTAGRAM_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-brass/60 px-5 py-2 text-sm font-medium text-brass hover:bg-brass hover:text-charcoal"
+          >
+            Follow on Instagram →
+          </a>
+        </div>
+        <div
+          className="reveal mt-10 grid min-h-[320px] grid-cols-2 gap-3 rounded-2xl border border-dashed border-border bg-background/40 p-4 sm:grid-cols-3 md:grid-cols-4"
+          aria-label="Instagram feed placeholder"
+        >
+          {/* INSTAGRAM FEED WIDGET EMBED GOES HERE
+              Paste the embed (Elfsight / SnapWidget / Instagram embed) inside this div.
+              Remove the placeholder tiles below when the widget is live. */}
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div
+              key={i}
+              className="aspect-square rounded-lg border border-border bg-charcoal-2/70"
+              aria-hidden
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------------- Booking ---------------- */
+function Booking() {
+  return (
+    <section id="booking" className="py-24">
+      <div className="mx-auto max-w-6xl px-5">
+        <div className="reveal max-w-2xl">
+          <p className="eyebrow text-brass">Book</p>
+          <h2 className="mt-4 font-display text-4xl font-semibold sm:text-5xl">
+            Grab a chair.
+          </h2>
+          <p className="mt-4 text-bone/75">
+            Book online below, or drop us a call / DM. Baggio and Rahul both take
+            walk-ins when the chairs are free.
+          </p>
+          <p className="mt-4 inline-flex items-center gap-2 text-sm text-bone/70">
+            <span className="inline-block h-2 w-2 rounded-full bg-brass" aria-hidden />
+            Next available: <span className="text-bone/90">{NEXT_AVAILABLE}</span>
+          </p>
+        </div>
+
+        <div className="mt-12 grid gap-8 lg:grid-cols-[1.4fr_1fr]">
+          {/* Booking widget embed */}
+          <div className="reveal">
+            <div
+              className="relative min-h-[520px] w-full overflow-hidden rounded-2xl border border-dashed border-brass/40 bg-card"
+              aria-label="Booking widget placeholder"
+            >
+              {/* BOOKING WIDGET EMBED GOES HERE
+                  Paste the Fresha / Squire / Booksy embed code inside this div.
+                  Keep the min-height so layout doesn't shift when the iframe loads. */}
+              <div className="grid h-full min-h-[520px] w-full place-items-center p-8 text-center">
+                <div>
+                  <p className="eyebrow text-brass">Booking widget</p>
+                  <p className="mt-3 font-display text-2xl">
+                    Drop in your Fresha / Squire / Booksy embed here.
+                  </p>
+                  <p className="mt-2 text-sm text-bone/60">
+                    Replace this placeholder in <code>src/routes/index.tsx</code> —
+                    look for <code>BOOKING WIDGET EMBED GOES HERE</code>.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <p className="mt-4 text-sm text-bone/70">
+              Prefer to call or message?{" "}
+              <a href={PHONE_HREF_RAW} className="text-brass hover:underline">
+                {PHONE_DISPLAY}
+              </a>{" "}
+              ·{" "}
+              <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="text-brass hover:underline">
+                @fresh.cutz.barbers
+              </a>
+            </p>
+          </div>
+
+          {/* Fallback contact form */}
+          <ContactForm />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ContactForm() {
+  const [sent, setSent] = useState(false);
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    // TODO: Wire form submissions to an email service (e.g. Resend, Formspree)
+    // or CRM. Read fields from new FormData(e.currentTarget).
+    setSent(true);
+  }
+  const inputCls =
+    "mt-1 block w-full min-h-[44px] rounded-md border border-border bg-background px-3 py-2 text-sm text-bone placeholder:text-bone/40 focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40";
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="reveal rounded-2xl border border-border bg-card p-6"
+      aria-label="Contact Fresh Cutz Barbers"
+    >
+      <p className="eyebrow text-brass">Or leave your details</p>
+      <h3 className="mt-2 font-display text-2xl font-semibold">We'll get back to you.</h3>
+      {sent ? (
+        <p className="mt-6 rounded-md border border-brass/40 bg-brass/10 p-4 text-sm text-bone">
+          Thanks — we'll be in touch shortly.
+        </p>
+      ) : (
+        <div className="mt-6 space-y-4">
+          <label className="block text-sm text-bone/80">
+            Name
+            <input name="name" required className={inputCls} placeholder="Your name" />
+          </label>
+          <label className="block text-sm text-bone/80">
+            Phone or email
+            <input
+              name="contact"
+              required
+              className={inputCls}
+              placeholder="07…  or  you@email.com"
+            />
+          </label>
+          <label className="block text-sm text-bone/80">
+            Preferred barber
+            <select name="barber" className={inputCls} defaultValue="">
+              <option value="">No preference</option>
+              <option value="baggio">Baggio</option>
+              <option value="rahul">Rahul</option>
+            </select>
+          </label>
+          <label className="block text-sm text-bone/80">
+            Message <span className="text-bone/50">(optional)</span>
+            <textarea
+              name="message"
+              rows={3}
+              className={inputCls}
+              placeholder="What are you after?"
+            />
+          </label>
+          <button
+            type="submit"
+            className="inline-flex min-h-[44px] w-full items-center justify-center rounded-full bg-brass px-6 py-3 font-semibold text-charcoal hover:-translate-y-0.5 transition-transform"
+          >
+            Send
+          </button>
+          <p className="text-xs text-bone/50">
+            {/* TODO: Wire form submission handler in ContactForm() to email service / CRM. */}
+            We'll only use these details to get back to you about your booking.
+          </p>
+        </div>
+      )}
+    </form>
+  );
+}
+
+/* ---------------- Loyalty callout ---------------- */
+function Loyalty() {
+  return (
+    <section className="py-10">
+      <div className="mx-auto max-w-6xl px-5">
+        <div className="reveal flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-brass/40 bg-brass/10 px-6 py-5">
+          <p className="font-display text-lg text-bone">
+            <span className="text-brass">Loyalty:</span> {LOYALTY_COPY}
+          </p>
+          <p className="text-xs text-bone/60">
+            {/* TODO: confirm loyalty wording with the shop owner before publishing */}
+            Ask in shop
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ---------------- Reviews ---------------- */
 function Reviews() {
   const reviews = [
