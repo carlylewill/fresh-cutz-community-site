@@ -166,8 +166,13 @@ function Hero() {
             <span>Kids' first cuts</span>
           </div>
         </div>
-        <div className="reveal relative">
-          <BarberChairIllustration />
+        <div className="reveal relative overflow-hidden rounded-2xl border border-border bg-card">
+          {/* TODO: Replace src with your own shop photo */}
+          <img
+            src=""
+            alt="Fresh Cutz Barbers shop"
+            className="h-full w-full object-cover"
+          />
         </div>
       </div>
     </section>
