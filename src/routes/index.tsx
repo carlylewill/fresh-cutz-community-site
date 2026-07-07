@@ -837,6 +837,22 @@ function Reviews() {
             </figure>
           ))}
         </div>
+        {/* Live Google Reviews widget — supplements the hand-picked quotes above. */}
+        <div
+          className="reveal mt-12 min-h-[240px] rounded-2xl border border-dashed border-border bg-charcoal-2/40 p-6"
+          aria-label="Google Reviews widget placeholder"
+        >
+          {/* LIVE GOOGLE REVIEWS WIDGET EMBED GOES HERE
+              Paste the Elfsight / EmbedSocial widget code inside this div. */}
+          <p className="eyebrow text-brass">Live from Google</p>
+          <p className="mt-2 font-display text-xl">
+            Live Google Reviews widget slots in here (Elfsight / EmbedSocial).
+          </p>
+          <p className="mt-2 text-sm text-bone/60">
+            Rating & count shown in the hero: ★ {RATING} · {REVIEW_COUNT} reviews.
+            Update <code>RATING</code> and <code>REVIEW_COUNT</code> at the top of the file.
+          </p>
+        </div>
       </div>
     </section>
   );
