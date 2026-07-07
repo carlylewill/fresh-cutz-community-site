@@ -303,12 +303,14 @@ function Barbers() {
 /* ---------------- Services ---------------- */
 function Services() {
   const items = [
-    ["Skin fade", "Tight, precise fade — clipper and razor finish.", "18"],
-    ["Classic cut", "Scissor and clipper work, wash and finish.", "18"],
-    ["Afro specialist cut", "Shape-up, tapers, sponge twists, texture work.", "22"],
-    ["Beard trim & line-up", "Sculpt, edge, and hot-towel finish.", "10"],
-    ["Kids' first cut", "Patient, gentle, and unrushed. Ages welcome.", "14"],
-    ["Long-hair restyle", "Layered scissor work for longer lengths.", "25"],
+    ["Skin fade", "Tight, precise fade — clipper and razor finish.", "25"],
+    ["Classic cut", "Scissor and clipper work, wash and finish.", "25"],
+    ["Taper fade", "Gradual taper with a crisp neckline and finish.", "25"],
+    ["Kids' cut", "Patient, gentle, and unrushed. Ages welcome.", "15"],
+    ["Buzz cut & line-up", "All-over buzz with a sharp edge-up.", "30"],
+    ["Trim & shave", "Haircut and hot-towel shave combo.", "30"],
+    ["Trim & wash", "Cut finished with a wash and style.", "30"],
+    ["Trim & dye", "Cut with a full colour or tone refresh.", "30"],
   ];
   return (
     <section id="services" className="border-y border-border/60 bg-charcoal-2/60 py-24">
