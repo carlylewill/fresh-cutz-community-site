@@ -1,15 +1,127 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+
+/*
+ * ============================================================================
+ * FRESH CUTZ BARBERS — MANUAL SETUP CHECKLIST (do outside Lovable)
+ * ============================================================================
+ * 1. Booking widget account (Fresha / Squire / Booksy) — paste embed into
+ *    the <BookingEmbed /> placeholder below.
+ * 2. Claim & verify Google Business Profile — match address, phone, hours.
+ * 3. Google Reviews widget account (e.g. Elfsight / EmbedSocial) — paste
+ *    embed into the <GoogleReviewsEmbed /> placeholder.
+ * 4. Instagram feed widget (Elfsight / SnapWidget / IG embed) — paste
+ *    into <InstagramFeedEmbed /> placeholder.
+ * 5. Google Analytics (GA4) — replace GA_MEASUREMENT_ID in __root.tsx / here.
+ * 6. Google Search Console — verify domain.
+ * 7. Real photography — replace [Add photo: ...] captions in <Gallery />.
+ * 8. Confirm loyalty offer wording with shop owner (see LOYALTY_COPY).
+ * 9. Confirm live rating & review count with owner (see RATING / REVIEW_COUNT)
+ *    before publishing.
+ * 10. Wire up <ContactForm /> submissions to email / CRM (search TODO).
+ * ============================================================================
+ */
 
 export const Route = createFileRoute("/")({
   component: Index,
+  head: () => ({
+    meta: [
+      {
+        title:
+          "Fresh Cutz Barbers | Barber in Wealdstone, Harrow — All Hair Types Welcome",
+      },
+      {
+        name: "description",
+        content:
+          "Barber in Wealdstone, Harrow. Afro, Asian & Caucasian hair specialists. 17+ years cutting the community. Book with Baggio or Rahul.",
+      },
+      {
+        property: "og:title",
+        content:
+          "Fresh Cutz Barbers | Barber in Wealdstone, Harrow — All Hair Types Welcome",
+      },
+      {
+        property: "og:description",
+        content:
+          "Afro, Asian & Caucasian hair specialists in Wealdstone, Harrow. 17+ years, patient and precise.",
+      },
+      { property: "og:url", content: "/" },
+    ],
+    links: [{ rel: "canonical", href: "/" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "HairSalon",
+          name: "Fresh Cutz Barbers",
+          image: [],
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: "18 Canning Road",
+            addressLocality: "Wealdstone",
+            addressRegion: "Harrow",
+            postalCode: "HA3 7SJ",
+            addressCountry: "GB",
+          },
+          telephone: "+44 7415 409277",
+          url: "/",
+          sameAs: ["https://www.instagram.com/fresh.cutz.barbers/"],
+          priceRange: "££",
+          openingHoursSpecification: [
+            {
+              "@type": "OpeningHoursSpecification",
+              dayOfWeek: [
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+              ],
+              opens: "10:00",
+              closes: "20:00",
+            },
+            {
+              "@type": "OpeningHoursSpecification",
+              dayOfWeek: "Sunday",
+              opens: "10:00",
+              closes: "18:00",
+            },
+          ],
+        }),
+      },
+      // TODO: Replace G-XXXXXXXXXX with your real GA4 Measurement ID.
+      {
+        async: true,
+        src: "https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX",
+      },
+      {
+        children: `
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-XXXXXXXXXX');
+        `,
+      },
+    ],
+  }),
 });
 
 const PHONE_DISPLAY = "07415 409277";
 const PHONE_TEL = "tel:+447415409277";
+const PHONE_HREF_RAW = "tel:07415409277";
 const INSTAGRAM_URL = "https://www.instagram.com/fresh.cutz.barbers/";
 const ADDRESS = "18 Canning Road, Wealdstone, Harrow, HA3 7SJ";
 const MAP_QUERY = encodeURIComponent("Fresh Cutz Barbers, 18 Canning Road, Wealdstone, Harrow, HA3 7SJ");
+const DIRECTIONS_URL = `https://www.google.com/maps/dir/?api=1&destination=${MAP_QUERY}`;
+
+// Editable variables — shop can update these without hunting through JSX.
+const RATING = "4.8"; // TODO: confirm current Google rating before publishing
+const REVIEW_COUNT = "106"; // TODO: confirm current Google review count before publishing
+const NEXT_AVAILABLE = "Thursday 2pm"; // Update this line to reflect current availability
+const LOYALTY_COPY =
+  "Every 6th cut is on us — ask in shop for details."; // TODO: confirm wording with owner
 
 function useReveal() {
   useEffect(() => {
@@ -40,11 +152,16 @@ function Index() {
         <HairTypes />
         <Barbers />
         <Services />
+        <Gallery />
         <Reviews />
+        <InstagramFeed />
+        <Booking />
+        <Loyalty />
         <SafeSpace />
         <Visit />
       </main>
       <Footer />
+      <FloatingBookNow />
     </div>
   );
 }
@@ -57,6 +174,7 @@ function Nav() {
     ["Barbers", "#barbers"],
     ["Services", "#services"],
     ["Reviews", "#reviews"],
+    ["Book", "#booking"],
     ["Visit", "#visit"],
   ];
   return (
@@ -79,17 +197,27 @@ function Nav() {
             </a>
           ))}
         </nav>
-        <a
-          href={PHONE_TEL}
-          className="hidden rounded-full border border-brass/60 px-4 py-2 text-sm font-medium text-brass transition-colors hover:bg-brass hover:text-charcoal md:inline-flex"
-        >
-          {PHONE_DISPLAY}
-        </a>
+        <div className="hidden items-center gap-3 md:flex">
+          <a
+            id="call-button"
+            href={PHONE_HREF_RAW}
+            className="inline-flex min-h-[44px] items-center rounded-full border border-brass/60 px-4 py-2 text-sm font-medium text-brass transition-colors hover:bg-brass hover:text-charcoal"
+          >
+            {PHONE_DISPLAY}
+          </a>
+          <a
+            id="book-now-header"
+            href="#booking"
+            className="inline-flex min-h-[44px] items-center rounded-full bg-brass px-5 py-2 text-sm font-semibold text-charcoal transition-transform hover:-translate-y-0.5"
+          >
+            Book Now
+          </a>
+        </div>
         <button
           aria-label="Menu"
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
-          className="rounded-md border border-border p-2 md:hidden"
+          className="min-h-[44px] min-w-[44px] rounded-md border border-border p-2 md:hidden"
         >
           <span className="block h-0.5 w-5 bg-bone" />
           <span className="mt-1 block h-0.5 w-5 bg-bone" />
@@ -104,21 +232,44 @@ function Nav() {
                 key={href}
                 href={href}
                 onClick={() => setOpen(false)}
-                className="eyebrow border-b border-border/60 py-3 text-bone/80"
+                className="eyebrow min-h-[44px] border-b border-border/60 py-3 text-bone/80"
               >
                 {label}
               </a>
             ))}
             <a
-              href={PHONE_TEL}
-              className="mt-4 rounded-full border border-brass px-4 py-3 text-center text-sm font-medium text-brass"
+              id="call-button-mobile"
+              href={PHONE_HREF_RAW}
+              className="mt-4 min-h-[44px] rounded-full border border-brass px-4 py-3 text-center text-sm font-medium text-brass"
             >
               Call {PHONE_DISPLAY}
+            </a>
+            <a
+              href="#booking"
+              onClick={() => setOpen(false)}
+              className="mt-3 min-h-[44px] rounded-full bg-brass px-4 py-3 text-center text-sm font-semibold text-charcoal"
+            >
+              Book Now
             </a>
           </div>
         </div>
       )}
     </header>
+  );
+}
+
+/* ---------------- Floating Book CTA (mobile) ---------------- */
+function FloatingBookNow() {
+  return (
+    <a
+      id="book-now-floating"
+      href="#booking"
+      className="fixed bottom-4 right-4 z-40 inline-flex min-h-[44px] items-center gap-2 rounded-full bg-brass px-5 py-3 text-sm font-semibold text-charcoal shadow-lg shadow-black/30 md:hidden"
+      aria-label="Book Now"
+    >
+      Book Now
+      <span aria-hidden>→</span>
+    </a>
   );
 }
 
@@ -129,7 +280,7 @@ function Hero() {
       <BackdropPattern />
       <div className="relative mx-auto grid max-w-6xl gap-12 px-5 pb-24 pt-16 md:grid-cols-[1.15fr_1fr] md:pt-24">
         <div className="reveal">
-          <p className="eyebrow text-brass">Wealdstone, Harrow · Est. 2009</p>
+          <p className="eyebrow text-brass">Barber in Wealdstone, Harrow · Est. 2009</p>
           <h1 className="mt-5 font-display text-5xl leading-[1.02] font-semibold tracking-tight sm:text-6xl md:text-7xl">
             Every hair type,
             <br />
@@ -138,26 +289,37 @@ function Hero() {
             cut with care.
           </h1>
           <p className="mt-6 max-w-lg text-lg text-bone/75">
-            A neighbourhood barbershop known for patience and precision. Coils, waves, straight — bring whatever you've got.
-            We'll take the time to get it right.
+            A neighbourhood barber in Wealdstone, Harrow — an afro hair barber, Asian
+            hair specialist and go-to for kids' first haircuts. Coils, waves, straight:
+            bring whatever you've got, we'll take the time to get it right.
           </p>
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <span className="inline-flex items-center gap-2 rounded-full border border-brass/50 bg-brass/10 px-3 py-1.5 text-sm font-medium text-brass">
+              <span aria-hidden>★</span>
+              {RATING} · {REVIEW_COUNT} Google Reviews
+            </span>
+            <span className="text-sm text-bone/70">Trusted by regulars for 20+ years.</span>
+          </div>
           <div className="mt-8 flex flex-wrap gap-3">
             <a
-              href={INSTAGRAM_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-full bg-brass px-6 py-3 font-medium text-charcoal transition-transform hover:-translate-y-0.5"
+              id="book-now-hero"
+              href="#booking"
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-brass px-6 py-3 font-medium text-charcoal transition-transform hover:-translate-y-0.5"
             >
-              Book on Instagram
+              Book Now
               <span aria-hidden>→</span>
             </a>
             <a
-              href={PHONE_TEL}
-              className="inline-flex items-center gap-2 rounded-full border border-bone/40 px-6 py-3 font-medium text-bone transition-colors hover:border-brass hover:text-brass"
+              href={PHONE_HREF_RAW}
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-bone/40 px-6 py-3 font-medium text-bone transition-colors hover:border-brass hover:text-brass"
             >
               Call {PHONE_DISPLAY}
             </a>
           </div>
+          <p className="mt-4 text-sm text-bone/60">
+            <span className="mr-2 inline-block h-2 w-2 rounded-full bg-brass" aria-hidden />
+            Next available: <span className="text-bone/90">{NEXT_AVAILABLE}</span>
+          </p>
           <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-2 text-sm text-bone/60">
             <span>17+ years in the community</span>
             <span className="hidden h-1 w-1 rounded-full bg-brass/60 sm:inline-block" />
@@ -166,12 +328,13 @@ function Hero() {
             <span>Kids' first cuts</span>
           </div>
         </div>
-        <div className="reveal relative overflow-hidden rounded-2xl border border-border bg-card">
+        <div className="reveal relative aspect-[4/5] overflow-hidden rounded-2xl border border-border bg-card">
           {/* TODO: Replace src with your own shop photo */}
           <img
             src=""
-            alt="Fresh Cutz Barbers shop"
+            alt="Fresh Cutz Barbers shopfront on Canning Road, Wealdstone, Harrow"
             className="h-full w-full object-cover"
+            loading="eager"
           />
         </div>
       </div>
@@ -201,17 +364,20 @@ function HairTypes() {
   const types = [
     {
       label: "Afro / Coily",
-      note: "Fades, shape-ups, tapers, sponge twists — cut with the grain of your curl pattern.",
+      note: "Fades, shape-ups, tapers, sponge twists — an afro hair barber in Harrow cutting with the grain of your curl pattern.",
+      alt: "Illustration of coily afro hair pattern — afro hair barber Harrow, Fresh Cutz Wealdstone",
       draw: <CoilyPattern />,
     },
     {
       label: "Asian / Straight",
-      note: "Clean lines, textured crops, scissor work that respects thick, straight hair.",
+      note: "Clean lines, textured crops, scissor work — Asian hair specialist Harrow, patient with thick, straight hair.",
+      alt: "Illustration of straight Asian hair pattern — Asian hair specialist Harrow, Fresh Cutz Wealdstone",
       draw: <StraightPattern />,
     },
     {
       label: "Caucasian / Wavy",
-      note: "Skin fades, classic side parts, modern crops — precision blends and finish.",
+      note: "Skin fades, classic side parts, modern crops — precision blends for wavy and straight European hair.",
+      alt: "Illustration of wavy Caucasian hair pattern — barber in Wealdstone, Harrow",
       draw: <WavyPattern />,
     },
   ];
@@ -221,11 +387,12 @@ function HairTypes() {
         <div className="reveal max-w-2xl">
           <p className="eyebrow text-brass">The signature</p>
           <h2 className="mt-4 font-display text-4xl font-semibold sm:text-5xl">
-            We welcome <span className="italic text-brass">all</span> hair types.
+            A barber in Wealdstone for <span className="italic text-brass">all</span> hair types.
           </h2>
           <p className="mt-4 text-bone/75">
-            Most shops quietly specialise in one texture. We don't. Three textures, one chair — and the technique to match whichever
-            one walks in.
+            Most shops quietly specialise in one texture. We don't. Afro hair barber, Asian hair
+            specialist and Caucasian hair — three textures, one chair, and the technique to match
+            whichever one walks in.
           </p>
         </div>
         <div className="mt-14 grid gap-6 md:grid-cols-3">
@@ -234,11 +401,15 @@ function HairTypes() {
               key={t.label}
               className="reveal group relative overflow-hidden rounded-2xl border border-border bg-background p-6"
             >
-              <div className="aspect-[4/3] overflow-hidden rounded-xl bg-charcoal-2">
+              <div
+                className="aspect-[4/3] overflow-hidden rounded-xl bg-charcoal-2"
+                role="img"
+                aria-label={t.alt}
+              >
                 {t.draw}
               </div>
               <p className="eyebrow mt-6 text-brass">{t.label}</p>
-              <p className="mt-2 font-display text-2xl font-semibold">Cut with the grain.</p>
+              <h3 className="mt-2 font-display text-2xl font-semibold">Cut with the grain.</h3>
               <p className="mt-2 text-sm text-bone/70">{t.note}</p>
             </article>
           ))}
@@ -349,6 +520,269 @@ function Services() {
   );
 }
 
+/* ---------------- Gallery (Inside Fresh Cutz) ---------------- */
+function Gallery() {
+  const slots: { label: string; alt: string; span?: string }[] = [
+    {
+      label: "[Add photo: shopfront on Canning Road]",
+      alt: "Fresh Cutz Barbers shopfront, 18 Canning Road, Wealdstone Harrow",
+      span: "sm:col-span-2 sm:row-span-2",
+    },
+    {
+      label: "[Add photo: Baggio cutting a fade]",
+      alt: "Baggio the barber cutting a skin fade at Fresh Cutz, Wealdstone Harrow",
+    },
+    {
+      label: "[Add photo: Rahul finishing a scissor cut]",
+      alt: "Rahul, Asian hair specialist, finishing a scissor cut at Fresh Cutz Harrow",
+    },
+    {
+      label: "[Add photo: kids' first haircut]",
+      alt: "Kids' first haircut at Fresh Cutz Barbers, Wealdstone Harrow",
+    },
+    {
+      label: "[Add photo: finished afro shape-up]",
+      alt: "Finished afro shape-up by a Harrow afro hair barber",
+    },
+    {
+      label: "[Add photo: shop interior chairs & mirrors]",
+      alt: "Inside Fresh Cutz Barbers — chairs and mirrors, Wealdstone Harrow",
+    },
+  ];
+  return (
+    <section id="gallery" className="py-24">
+      <div className="mx-auto max-w-6xl px-5">
+        <div className="reveal max-w-2xl">
+          <p className="eyebrow text-brass">Inside the shop</p>
+          <h2 className="mt-4 font-display text-4xl font-semibold sm:text-5xl">
+            Inside Fresh Cutz.
+          </h2>
+          <p className="mt-4 text-bone/75">
+            Real photos of the shop, the barbers and the cuts — dropping in soon.
+          </p>
+        </div>
+        <div className="reveal mt-10 grid auto-rows-[minmax(0,1fr)] grid-cols-2 gap-4 sm:grid-cols-4">
+          {slots.map((s) => (
+            <figure
+              key={s.label}
+              className={`relative aspect-[4/3] overflow-hidden rounded-xl border border-border bg-charcoal-2 ${s.span ?? ""}`}
+            >
+              {/* TODO: Replace with <img src="..." alt="..." /> — keep alt text descriptive */}
+              <div
+                role="img"
+                aria-label={s.alt}
+                className="grid h-full w-full place-items-center p-4 text-center text-xs text-bone/50"
+              >
+                {s.label}
+              </div>
+            </figure>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------------- Instagram Feed (Recent Cuts) ---------------- */
+function InstagramFeed() {
+  return (
+    <section id="recent-cuts" className="border-y border-border/60 bg-charcoal-2/60 py-24">
+      <div className="mx-auto max-w-6xl px-5">
+        <div className="reveal flex flex-wrap items-end justify-between gap-4">
+          <div className="max-w-xl">
+            <p className="eyebrow text-brass">Recent cuts</p>
+            <h2 className="mt-4 font-display text-4xl font-semibold sm:text-5xl">
+              Straight from the chair.
+            </h2>
+            <p className="mt-3 text-bone/75">
+              The latest work, pulled live from{" "}
+              <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="text-brass hover:underline">
+                @fresh.cutz.barbers
+              </a>
+              .
+            </p>
+          </div>
+          <a
+            href={INSTAGRAM_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-brass/60 px-5 py-2 text-sm font-medium text-brass hover:bg-brass hover:text-charcoal"
+          >
+            Follow on Instagram →
+          </a>
+        </div>
+        <div
+          className="reveal mt-10 grid min-h-[320px] grid-cols-2 gap-3 rounded-2xl border border-dashed border-border bg-background/40 p-4 sm:grid-cols-3 md:grid-cols-4"
+          aria-label="Instagram feed placeholder"
+        >
+          {/* INSTAGRAM FEED WIDGET EMBED GOES HERE
+              Paste the embed (Elfsight / SnapWidget / Instagram embed) inside this div.
+              Remove the placeholder tiles below when the widget is live. */}
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div
+              key={i}
+              className="aspect-square rounded-lg border border-border bg-charcoal-2/70"
+              aria-hidden
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------------- Booking ---------------- */
+function Booking() {
+  return (
+    <section id="booking" className="py-24">
+      <div className="mx-auto max-w-6xl px-5">
+        <div className="reveal max-w-2xl">
+          <p className="eyebrow text-brass">Book</p>
+          <h2 className="mt-4 font-display text-4xl font-semibold sm:text-5xl">
+            Grab a chair.
+          </h2>
+          <p className="mt-4 text-bone/75">
+            Book online below, or drop us a call / DM. Baggio and Rahul both take
+            walk-ins when the chairs are free.
+          </p>
+          <p className="mt-4 inline-flex items-center gap-2 text-sm text-bone/70">
+            <span className="inline-block h-2 w-2 rounded-full bg-brass" aria-hidden />
+            Next available: <span className="text-bone/90">{NEXT_AVAILABLE}</span>
+          </p>
+        </div>
+
+        <div className="mt-12 grid gap-8 lg:grid-cols-[1.4fr_1fr]">
+          {/* Booking widget embed */}
+          <div className="reveal">
+            <div
+              className="relative min-h-[520px] w-full overflow-hidden rounded-2xl border border-dashed border-brass/40 bg-card"
+              aria-label="Booking widget placeholder"
+            >
+              {/* BOOKING WIDGET EMBED GOES HERE
+                  Paste the Fresha / Squire / Booksy embed code inside this div.
+                  Keep the min-height so layout doesn't shift when the iframe loads. */}
+              <div className="grid h-full min-h-[520px] w-full place-items-center p-8 text-center">
+                <div>
+                  <p className="eyebrow text-brass">Booking widget</p>
+                  <p className="mt-3 font-display text-2xl">
+                    Drop in your Fresha / Squire / Booksy embed here.
+                  </p>
+                  <p className="mt-2 text-sm text-bone/60">
+                    Replace this placeholder in <code>src/routes/index.tsx</code> —
+                    look for <code>BOOKING WIDGET EMBED GOES HERE</code>.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <p className="mt-4 text-sm text-bone/70">
+              Prefer to call or message?{" "}
+              <a href={PHONE_HREF_RAW} className="text-brass hover:underline">
+                {PHONE_DISPLAY}
+              </a>{" "}
+              ·{" "}
+              <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="text-brass hover:underline">
+                @fresh.cutz.barbers
+              </a>
+            </p>
+          </div>
+
+          {/* Fallback contact form */}
+          <ContactForm />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ContactForm() {
+  const [sent, setSent] = useState(false);
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    // TODO: Wire form submissions to an email service (e.g. Resend, Formspree)
+    // or CRM. Read fields from new FormData(e.currentTarget).
+    setSent(true);
+  }
+  const inputCls =
+    "mt-1 block w-full min-h-[44px] rounded-md border border-border bg-background px-3 py-2 text-sm text-bone placeholder:text-bone/40 focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40";
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="reveal rounded-2xl border border-border bg-card p-6"
+      aria-label="Contact Fresh Cutz Barbers"
+    >
+      <p className="eyebrow text-brass">Or leave your details</p>
+      <h3 className="mt-2 font-display text-2xl font-semibold">We'll get back to you.</h3>
+      {sent ? (
+        <p className="mt-6 rounded-md border border-brass/40 bg-brass/10 p-4 text-sm text-bone">
+          Thanks — we'll be in touch shortly.
+        </p>
+      ) : (
+        <div className="mt-6 space-y-4">
+          <label className="block text-sm text-bone/80">
+            Name
+            <input name="name" required className={inputCls} placeholder="Your name" />
+          </label>
+          <label className="block text-sm text-bone/80">
+            Phone or email
+            <input
+              name="contact"
+              required
+              className={inputCls}
+              placeholder="07…  or  you@email.com"
+            />
+          </label>
+          <label className="block text-sm text-bone/80">
+            Preferred barber
+            <select name="barber" className={inputCls} defaultValue="">
+              <option value="">No preference</option>
+              <option value="baggio">Baggio</option>
+              <option value="rahul">Rahul</option>
+            </select>
+          </label>
+          <label className="block text-sm text-bone/80">
+            Message <span className="text-bone/50">(optional)</span>
+            <textarea
+              name="message"
+              rows={3}
+              className={inputCls}
+              placeholder="What are you after?"
+            />
+          </label>
+          <button
+            type="submit"
+            className="inline-flex min-h-[44px] w-full items-center justify-center rounded-full bg-brass px-6 py-3 font-semibold text-charcoal hover:-translate-y-0.5 transition-transform"
+          >
+            Send
+          </button>
+          <p className="text-xs text-bone/50">
+            {/* TODO: Wire form submission handler in ContactForm() to email service / CRM. */}
+            We'll only use these details to get back to you about your booking.
+          </p>
+        </div>
+      )}
+    </form>
+  );
+}
+
+/* ---------------- Loyalty callout ---------------- */
+function Loyalty() {
+  return (
+    <section className="py-10">
+      <div className="mx-auto max-w-6xl px-5">
+        <div className="reveal flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-brass/40 bg-brass/10 px-6 py-5">
+          <p className="font-display text-lg text-bone">
+            <span className="text-brass">Loyalty:</span> {LOYALTY_COPY}
+          </p>
+          <p className="text-xs text-bone/60">
+            {/* TODO: confirm loyalty wording with the shop owner before publishing */}
+            Ask in shop
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ---------------- Reviews ---------------- */
 function Reviews() {
   const reviews = [
@@ -403,6 +837,22 @@ function Reviews() {
             </figure>
           ))}
         </div>
+        {/* Live Google Reviews widget — supplements the hand-picked quotes above. */}
+        <div
+          className="reveal mt-12 min-h-[240px] rounded-2xl border border-dashed border-border bg-charcoal-2/40 p-6"
+          aria-label="Google Reviews widget placeholder"
+        >
+          {/* LIVE GOOGLE REVIEWS WIDGET EMBED GOES HERE
+              Paste the Elfsight / EmbedSocial widget code inside this div. */}
+          <p className="eyebrow text-brass">Live from Google</p>
+          <p className="mt-2 font-display text-xl">
+            Live Google Reviews widget slots in here (Elfsight / EmbedSocial).
+          </p>
+          <p className="mt-2 text-sm text-bone/60">
+            Rating & count shown in the hero: ★ {RATING} · {REVIEW_COUNT} reviews.
+            Update <code>RATING</code> and <code>REVIEW_COUNT</code> at the top of the file.
+          </p>
+        </div>
       </div>
     </section>
   );
@@ -451,12 +901,21 @@ function Visit() {
           <div className="reveal space-y-8 rounded-2xl border border-border bg-card p-8">
             <div>
               <p className="eyebrow text-bone/50">Address</p>
-              <p className="mt-2 font-display text-2xl">{ADDRESS}</p>
+              <a
+                id="directions-button"
+                href={DIRECTIONS_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-2 block font-display text-2xl text-bone hover:text-brass"
+              >
+                {ADDRESS}
+              </a>
+              <p className="mt-2 text-sm text-bone/60">Tap for directions in Google Maps.</p>
             </div>
             <div className="grid gap-8 sm:grid-cols-2">
               <div>
                 <p className="eyebrow text-bone/50">Phone</p>
-                <a href={PHONE_TEL} className="mt-2 block font-display text-2xl text-brass hover:underline">
+                <a href={PHONE_HREF_RAW} className="mt-2 block font-display text-2xl text-brass hover:underline">
                   {PHONE_DISPLAY}
                 </a>
               </div>
