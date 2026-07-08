@@ -150,8 +150,7 @@ function Index() {
         <HairTypes />
         <Barbers />
         <Services />
-        <Gallery />
-        <Reviews />
+        <ChairShowcase />
         <InstagramFeed />
         <Booking />
         <SafeSpace />
