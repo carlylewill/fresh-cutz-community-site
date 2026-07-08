@@ -652,7 +652,7 @@ function InstagramFeed() {
           <div className="max-w-xl">
             <p className="eyebrow text-brass">Recent cuts</p>
             <h2 className="mt-4 font-display text-4xl font-semibold sm:text-5xl">
-              Straight from the chair.
+              Fresh from the feed.
             </h2>
             <p className="mt-3 text-bone/75">
               The latest work, pulled live from{" "}
