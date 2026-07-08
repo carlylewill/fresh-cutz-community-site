@@ -14,11 +14,10 @@ import { useEffect, useState, type FormEvent } from "react";
  *    into <InstagramFeedEmbed /> placeholder.
  * 5. Google Analytics (GA4) — replace GA_MEASUREMENT_ID in __root.tsx / here.
  * 6. Google Search Console — verify domain.
- * 7. Real photography — replace [Add photo: ...] captions in <Gallery />.
- * 8. Confirm loyalty offer wording with shop owner (see LOYALTY_COPY).
- * 9. Confirm live rating & review count with owner (see RATING / REVIEW_COUNT)
+ * 7. Real photography — replace [Add photo: ...] captions in <ChairShowcase />.
+ * 8. Confirm live rating & review count with owner (see RATING / REVIEW_COUNT)
  *    before publishing.
- * 10. Wire up <ContactForm /> submissions to email / CRM (search TODO).
+ * 9. Wire up <ContactForm /> submissions to email / CRM (search TODO).
  * ============================================================================
  */
 
