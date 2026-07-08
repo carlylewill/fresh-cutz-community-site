@@ -154,7 +154,6 @@ function Index() {
         <Reviews />
         <InstagramFeed />
         <Booking />
-        <Loyalty />
         <SafeSpace />
         <Visit />
       </main>
