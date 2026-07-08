@@ -120,8 +120,6 @@ const DIRECTIONS_URL = `https://www.google.com/maps/dir/?api=1&destination=${MAP
 const RATING = "4.8"; // TODO: confirm current Google rating before publishing
 const REVIEW_COUNT = "106"; // TODO: confirm current Google review count before publishing
 const NEXT_AVAILABLE = "Thursday 2pm"; // Update this line to reflect current availability
-const LOYALTY_COPY =
-  "Every 6th cut is on us — ask in shop for details."; // TODO: confirm wording with owner
 
 function useReveal() {
   useEffect(() => {
