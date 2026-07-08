@@ -14,11 +14,10 @@ import { useEffect, useState, type FormEvent } from "react";
  *    into <InstagramFeedEmbed /> placeholder.
  * 5. Google Analytics (GA4) — replace GA_MEASUREMENT_ID in __root.tsx / here.
  * 6. Google Search Console — verify domain.
- * 7. Real photography — replace [Add photo: ...] captions in <Gallery />.
- * 8. Confirm loyalty offer wording with shop owner (see LOYALTY_COPY).
- * 9. Confirm live rating & review count with owner (see RATING / REVIEW_COUNT)
+ * 7. Real photography — replace [Add photo: ...] captions in <ChairShowcase />.
+ * 8. Confirm live rating & review count with owner (see RATING / REVIEW_COUNT)
  *    before publishing.
- * 10. Wire up <ContactForm /> submissions to email / CRM (search TODO).
+ * 9. Wire up <ContactForm /> submissions to email / CRM (search TODO).
  * ============================================================================
  */
 
@@ -120,8 +119,6 @@ const DIRECTIONS_URL = `https://www.google.com/maps/dir/?api=1&destination=${MAP
 const RATING = "4.8"; // TODO: confirm current Google rating before publishing
 const REVIEW_COUNT = "106"; // TODO: confirm current Google review count before publishing
 const NEXT_AVAILABLE = "Thursday 2pm"; // Update this line to reflect current availability
-const LOYALTY_COPY =
-  "Every 6th cut is on us — ask in shop for details."; // TODO: confirm wording with owner
 
 function useReveal() {
   useEffect(() => {
@@ -152,11 +149,9 @@ function Index() {
         <HairTypes />
         <Barbers />
         <Services />
-        <Gallery />
-        <Reviews />
+        <ChairShowcase />
         <InstagramFeed />
         <Booking />
-        <Loyalty />
         <SafeSpace />
         <Visit />
       </main>
@@ -520,8 +515,8 @@ function Services() {
   );
 }
 
-/* ---------------- Gallery (Inside Fresh Cutz) ---------------- */
-function Gallery() {
+/* ---------------- Chair Showcase (gallery + testimonials) ---------------- */
+function ChairShowcase() {
   const slots: { label: string; alt: string; span?: string }[] = [
     {
       label: "[Add photo: shopfront on Canning Road]",
@@ -549,19 +544,41 @@ function Gallery() {
       alt: "Inside Fresh Cutz Barbers — chairs and mirrors, Wealdstone Harrow",
     },
   ];
+  const reviews = [
+    {
+      name: "David Tse",
+      meta: "Detail obsessive",
+      quote:
+        "He is honestly the best hairdresser I've ever had. I showed him two reference photos, and he kept carefully comparing my hair to the pictures throughout the whole appointment, paying so much attention to every detail.",
+    },
+    {
+      name: "Forward Horizon",
+      meta: "Regular · 20+ years",
+      quote:
+        "Thank you for a great cut as usual — I have been with you over 20 years and I'm always happy with the cut!",
+    },
+    {
+      name: "Larisa Cirlan",
+      meta: "Parent · first-cut rescue",
+      quote:
+        "My son had a very bad experience with a previous barber which left him in tears and hating barbers. After a year we decided to try again and I am so happy I found this place. Barber gives all his time and attention into the haircut, and the haircut was 10 out of 10. My son loved it so much that he said from now on this is how he always wants to cut his hair.",
+    },
+  ];
   return (
-    <section id="gallery" className="py-24">
+    <section id="reviews" className="py-24">
       <div className="mx-auto max-w-6xl px-5">
         <div className="reveal max-w-2xl">
-          <p className="eyebrow text-brass">Inside the shop</p>
+          <p className="eyebrow text-brass">Straight from the chair</p>
           <h2 className="mt-4 font-display text-4xl font-semibold sm:text-5xl">
-            Inside Fresh Cutz.
+            Straight From The Chair.
           </h2>
           <p className="mt-4 text-bone/75">
-            Real photos of the shop, the barbers and the cuts — dropping in soon.
+            A look inside the shop and the words of the regulars who keep coming back.
           </p>
         </div>
-        <div className="reveal mt-10 grid auto-rows-[minmax(0,1fr)] grid-cols-2 gap-4 sm:grid-cols-4">
+
+        {/* Part A: gallery grid */}
+        <div className="reveal mt-12 grid auto-rows-[minmax(0,1fr)] grid-cols-2 gap-4 sm:grid-cols-4">
           {slots.map((s) => (
             <figure
               key={s.label}
@@ -578,6 +595,48 @@ function Gallery() {
             </figure>
           ))}
         </div>
+
+        {/* Part B: testimonials */}
+        <div className="mt-16 grid gap-6 md:grid-cols-3">
+          {reviews.map((r, i) => (
+            <figure
+              key={r.name}
+              className="reveal relative flex flex-col rounded-2xl border border-border bg-card p-8"
+              style={{ marginTop: i === 1 ? "2rem" : undefined }}
+            >
+              <span
+                aria-hidden
+                className="font-display text-7xl leading-none text-brass/40"
+              >
+                &ldquo;
+              </span>
+              <blockquote className="-mt-4 font-display text-lg leading-snug text-bone/90">
+                {r.quote}
+              </blockquote>
+              <figcaption className="mt-6 border-t border-border pt-4">
+                <p className="font-display text-lg font-semibold text-brass">{r.name}</p>
+                <p className="eyebrow mt-1 text-bone/50">{r.meta}</p>
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+
+        {/* Live Google Reviews widget — supplements the hand-picked quotes above. */}
+        <div
+          className="reveal mt-12 min-h-[240px] rounded-2xl border border-dashed border-border bg-charcoal-2/40 p-6"
+          aria-label="Google Reviews widget placeholder"
+        >
+          {/* LIVE GOOGLE REVIEWS WIDGET EMBED GOES HERE
+              Paste the Elfsight / EmbedSocial widget code inside this div. */}
+          <p className="eyebrow text-brass">Live from Google</p>
+          <p className="mt-2 font-display text-xl">
+            Live Google Reviews widget slots in here (Elfsight / EmbedSocial).
+          </p>
+          <p className="mt-2 text-sm text-bone/60">
+            Rating & count shown in the hero: ★ {RATING} · {REVIEW_COUNT} reviews.
+            Update <code>RATING</code> and <code>REVIEW_COUNT</code> at the top of the file.
+          </p>
+        </div>
       </div>
     </section>
   );
@@ -592,7 +651,7 @@ function InstagramFeed() {
           <div className="max-w-xl">
             <p className="eyebrow text-brass">Recent cuts</p>
             <h2 className="mt-4 font-display text-4xl font-semibold sm:text-5xl">
-              Straight from the chair.
+              Fresh from the feed.
             </h2>
             <p className="mt-3 text-bone/75">
               The latest work, pulled live from{" "}
@@ -761,100 +820,6 @@ function ContactForm() {
         </div>
       )}
     </form>
-  );
-}
-
-/* ---------------- Loyalty callout ---------------- */
-function Loyalty() {
-  return (
-    <section className="py-10">
-      <div className="mx-auto max-w-6xl px-5">
-        <div className="reveal flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-brass/40 bg-brass/10 px-6 py-5">
-          <p className="font-display text-lg text-bone">
-            <span className="text-brass">Loyalty:</span> {LOYALTY_COPY}
-          </p>
-          <p className="text-xs text-bone/60">
-            {/* TODO: confirm loyalty wording with the shop owner before publishing */}
-            Ask in shop
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ---------------- Reviews ---------------- */
-function Reviews() {
-  const reviews = [
-    {
-      name: "David Tse",
-      meta: "Detail obsessive",
-      quote:
-        "He is honestly the best hairdresser I've ever had. I showed him two reference photos, and he kept carefully comparing my hair to the pictures throughout the whole appointment, paying so much attention to every detail.",
-    },
-    {
-      name: "Forward Horizon",
-      meta: "Regular · 20+ years",
-      quote:
-        "Thank you for a great cut as usual — I have been with you over 20 years and I'm always happy with the cut!",
-    },
-    {
-      name: "Larisa Cirlan",
-      meta: "Parent · first-cut rescue",
-      quote:
-        "My son had a very bad experience with a previous barber which left him in tears and hating barbers. After a year we decided to try again and I am so happy I found this place. Barber gives all his time and attention into the haircut, and the haircut was 10 out of 10. My son loved it so much that he said from now on this is how he always wants to cut his hair.",
-    },
-  ];
-  return (
-    <section id="reviews" className="py-24">
-      <div className="mx-auto max-w-6xl px-5">
-        <div className="reveal max-w-2xl">
-          <p className="eyebrow text-brass">In their words</p>
-          <h2 className="mt-4 font-display text-4xl font-semibold sm:text-5xl">
-            Real reviews from real regulars.
-          </h2>
-        </div>
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {reviews.map((r, i) => (
-            <figure
-              key={r.name}
-              className="reveal relative flex flex-col rounded-2xl border border-border bg-card p-8"
-              style={{ marginTop: i === 1 ? "2rem" : undefined }}
-            >
-              <span
-                aria-hidden
-                className="font-display text-7xl leading-none text-brass/40"
-              >
-                &ldquo;
-              </span>
-              <blockquote className="-mt-4 font-display text-lg leading-snug text-bone/90">
-                {r.quote}
-              </blockquote>
-              <figcaption className="mt-6 border-t border-border pt-4">
-                <p className="font-display text-lg font-semibold text-brass">{r.name}</p>
-                <p className="eyebrow mt-1 text-bone/50">{r.meta}</p>
-              </figcaption>
-            </figure>
-          ))}
-        </div>
-        {/* Live Google Reviews widget — supplements the hand-picked quotes above. */}
-        <div
-          className="reveal mt-12 min-h-[240px] rounded-2xl border border-dashed border-border bg-charcoal-2/40 p-6"
-          aria-label="Google Reviews widget placeholder"
-        >
-          {/* LIVE GOOGLE REVIEWS WIDGET EMBED GOES HERE
-              Paste the Elfsight / EmbedSocial widget code inside this div. */}
-          <p className="eyebrow text-brass">Live from Google</p>
-          <p className="mt-2 font-display text-xl">
-            Live Google Reviews widget slots in here (Elfsight / EmbedSocial).
-          </p>
-          <p className="mt-2 text-sm text-bone/60">
-            Rating & count shown in the hero: ★ {RATING} · {REVIEW_COUNT} reviews.
-            Update <code>RATING</code> and <code>REVIEW_COUNT</code> at the top of the file.
-          </p>
-        </div>
-      </div>
-    </section>
   );
 }
 
