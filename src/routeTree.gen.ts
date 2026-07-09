@@ -10,33 +10,120 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BookingRespondTokenProposeRouteImport } from './routes/booking/respond/$token/propose'
+import { Route as BookingRespondTokenDeclineRouteImport } from './routes/booking/respond/$token/decline'
+import { Route as BookingRespondTokenAcceptRouteImport } from './routes/booking/respond/$token/accept'
+import { Route as BookingOwnerTokenRejectRouteImport } from './routes/booking/owner/$token/reject'
+import { Route as BookingOwnerTokenProposeRouteImport } from './routes/booking/owner/$token/propose'
+import { Route as BookingOwnerTokenApproveRouteImport } from './routes/booking/owner/$token/approve'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BookingRespondTokenProposeRoute =
+  BookingRespondTokenProposeRouteImport.update({
+    id: '/booking/respond/$token/propose',
+    path: '/booking/respond/$token/propose',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const BookingRespondTokenDeclineRoute =
+  BookingRespondTokenDeclineRouteImport.update({
+    id: '/booking/respond/$token/decline',
+    path: '/booking/respond/$token/decline',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const BookingRespondTokenAcceptRoute =
+  BookingRespondTokenAcceptRouteImport.update({
+    id: '/booking/respond/$token/accept',
+    path: '/booking/respond/$token/accept',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const BookingOwnerTokenRejectRoute = BookingOwnerTokenRejectRouteImport.update({
+  id: '/booking/owner/$token/reject',
+  path: '/booking/owner/$token/reject',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BookingOwnerTokenProposeRoute =
+  BookingOwnerTokenProposeRouteImport.update({
+    id: '/booking/owner/$token/propose',
+    path: '/booking/owner/$token/propose',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const BookingOwnerTokenApproveRoute =
+  BookingOwnerTokenApproveRouteImport.update({
+    id: '/booking/owner/$token/approve',
+    path: '/booking/owner/$token/approve',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/booking/owner/$token/approve': typeof BookingOwnerTokenApproveRoute
+  '/booking/owner/$token/propose': typeof BookingOwnerTokenProposeRoute
+  '/booking/owner/$token/reject': typeof BookingOwnerTokenRejectRoute
+  '/booking/respond/$token/accept': typeof BookingRespondTokenAcceptRoute
+  '/booking/respond/$token/decline': typeof BookingRespondTokenDeclineRoute
+  '/booking/respond/$token/propose': typeof BookingRespondTokenProposeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/booking/owner/$token/approve': typeof BookingOwnerTokenApproveRoute
+  '/booking/owner/$token/propose': typeof BookingOwnerTokenProposeRoute
+  '/booking/owner/$token/reject': typeof BookingOwnerTokenRejectRoute
+  '/booking/respond/$token/accept': typeof BookingRespondTokenAcceptRoute
+  '/booking/respond/$token/decline': typeof BookingRespondTokenDeclineRoute
+  '/booking/respond/$token/propose': typeof BookingRespondTokenProposeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/booking/owner/$token/approve': typeof BookingOwnerTokenApproveRoute
+  '/booking/owner/$token/propose': typeof BookingOwnerTokenProposeRoute
+  '/booking/owner/$token/reject': typeof BookingOwnerTokenRejectRoute
+  '/booking/respond/$token/accept': typeof BookingRespondTokenAcceptRoute
+  '/booking/respond/$token/decline': typeof BookingRespondTokenDeclineRoute
+  '/booking/respond/$token/propose': typeof BookingRespondTokenProposeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/booking/owner/$token/approve'
+    | '/booking/owner/$token/propose'
+    | '/booking/owner/$token/reject'
+    | '/booking/respond/$token/accept'
+    | '/booking/respond/$token/decline'
+    | '/booking/respond/$token/propose'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/booking/owner/$token/approve'
+    | '/booking/owner/$token/propose'
+    | '/booking/owner/$token/reject'
+    | '/booking/respond/$token/accept'
+    | '/booking/respond/$token/decline'
+    | '/booking/respond/$token/propose'
+  id:
+    | '__root__'
+    | '/'
+    | '/booking/owner/$token/approve'
+    | '/booking/owner/$token/propose'
+    | '/booking/owner/$token/reject'
+    | '/booking/respond/$token/accept'
+    | '/booking/respond/$token/decline'
+    | '/booking/respond/$token/propose'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BookingOwnerTokenApproveRoute: typeof BookingOwnerTokenApproveRoute
+  BookingOwnerTokenProposeRoute: typeof BookingOwnerTokenProposeRoute
+  BookingOwnerTokenRejectRoute: typeof BookingOwnerTokenRejectRoute
+  BookingRespondTokenAcceptRoute: typeof BookingRespondTokenAcceptRoute
+  BookingRespondTokenDeclineRoute: typeof BookingRespondTokenDeclineRoute
+  BookingRespondTokenProposeRoute: typeof BookingRespondTokenProposeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,12 +135,70 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/booking/respond/$token/propose': {
+      id: '/booking/respond/$token/propose'
+      path: '/booking/respond/$token/propose'
+      fullPath: '/booking/respond/$token/propose'
+      preLoaderRoute: typeof BookingRespondTokenProposeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/booking/respond/$token/decline': {
+      id: '/booking/respond/$token/decline'
+      path: '/booking/respond/$token/decline'
+      fullPath: '/booking/respond/$token/decline'
+      preLoaderRoute: typeof BookingRespondTokenDeclineRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/booking/respond/$token/accept': {
+      id: '/booking/respond/$token/accept'
+      path: '/booking/respond/$token/accept'
+      fullPath: '/booking/respond/$token/accept'
+      preLoaderRoute: typeof BookingRespondTokenAcceptRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/booking/owner/$token/reject': {
+      id: '/booking/owner/$token/reject'
+      path: '/booking/owner/$token/reject'
+      fullPath: '/booking/owner/$token/reject'
+      preLoaderRoute: typeof BookingOwnerTokenRejectRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/booking/owner/$token/propose': {
+      id: '/booking/owner/$token/propose'
+      path: '/booking/owner/$token/propose'
+      fullPath: '/booking/owner/$token/propose'
+      preLoaderRoute: typeof BookingOwnerTokenProposeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/booking/owner/$token/approve': {
+      id: '/booking/owner/$token/approve'
+      path: '/booking/owner/$token/approve'
+      fullPath: '/booking/owner/$token/approve'
+      preLoaderRoute: typeof BookingOwnerTokenApproveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BookingOwnerTokenApproveRoute: BookingOwnerTokenApproveRoute,
+  BookingOwnerTokenProposeRoute: BookingOwnerTokenProposeRoute,
+  BookingOwnerTokenRejectRoute: BookingOwnerTokenRejectRoute,
+  BookingRespondTokenAcceptRoute: BookingRespondTokenAcceptRoute,
+  BookingRespondTokenDeclineRoute: BookingRespondTokenDeclineRoute,
+  BookingRespondTokenProposeRoute: BookingRespondTokenProposeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

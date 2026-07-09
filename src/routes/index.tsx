@@ -1,12 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, type FormEvent } from "react";
-import shopfrontAsset from "@/assets/shopfront.jpeg.asset.json";
-import afroFrontAsset from "@/assets/afro-front.jpeg.asset.json";
-import afroSideAsset from "@/assets/afro-side.jpeg.asset.json";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
+import { createBooking } from "@/functions/bookings";
+import shopfrontImg from "@/assets/shopfront.jpeg";
+import cuttingHairImg from "@/assets/cutting-hair.jpeg";
+import afroFrontImg from "@/assets/afro-front.jpeg";
+import afroSideImg from "@/assets/afro-side.jpeg";
+import hairAfroCoilyImg from "@/assets/hair-afro-coily.jpg";
+import hairAsianStraightImg from "@/assets/hair-asian-straight.jpg";
+import hairCaucasianWavyImg from "@/assets/hair-caucasian-wavy.jpg";
 
 /*
  * ============================================================================
- * FRESH CUTZ BARBERS — MANUAL SETUP CHECKLIST (do outside Lovable)
+ * FRESH CUTZ BARBERS — MANUAL SETUP CHECKLIST
  * ============================================================================
  * 1. Booking widget account (Fresha / Squire / Booksy) — paste embed into
  *    the <BookingEmbed /> placeholder below.
@@ -123,6 +135,48 @@ const RATING = "4.8"; // TODO: confirm current Google rating before publishing
 const REVIEW_COUNT = "106"; // TODO: confirm current Google review count before publishing
 const NEXT_AVAILABLE = "Thursday 2pm"; // Update this line to reflect current availability
 
+type Service = { id: string; name: string; desc: string; priceFrom: number };
+
+const SERVICES: Service[] = [
+  { id: "skin-fade", name: "Skin fade", desc: "Tight, precise fade — clipper and razor finish.", priceFrom: 25 },
+  { id: "classic-cut", name: "Classic cut", desc: "Scissor and clipper work, wash and finish.", priceFrom: 25 },
+  { id: "taper-fade", name: "Taper fade", desc: "Gradual taper with a crisp neckline and finish.", priceFrom: 25 },
+  { id: "kids-cut", name: "Kids' cut", desc: "Patient, gentle, and unrushed. Ages welcome.", priceFrom: 15 },
+  { id: "buzz-lineup", name: "Buzz cut & line-up", desc: "All-over buzz with a sharp edge-up.", priceFrom: 30 },
+  { id: "trim-shave", name: "Trim & shave", desc: "Haircut and hot-towel shave combo.", priceFrom: 30 },
+  { id: "trim-wash", name: "Trim & wash", desc: "Cut finished with a wash and style.", priceFrom: 30 },
+  { id: "trim-dye", name: "Trim & dye", desc: "Cut with a full colour or tone refresh.", priceFrom: 30 },
+];
+
+/* ---------------- Booking cart ---------------- */
+type CartContextValue = {
+  items: Service[];
+  toggle: (service: Service) => void;
+  remove: (id: string) => void;
+  clear: () => void;
+};
+
+const CartContext = createContext<CartContextValue | null>(null);
+
+function useCart() {
+  const ctx = useContext(CartContext);
+  if (!ctx) throw new Error("useCart must be used within <CartProvider>");
+  return ctx;
+}
+
+function CartProvider({ children }: { children: ReactNode }) {
+  const [items, setItems] = useState<Service[]>([]);
+  const toggle = (service: Service) =>
+    setItems((prev) =>
+      prev.some((i) => i.id === service.id)
+        ? prev.filter((i) => i.id !== service.id)
+        : [...prev, service],
+    );
+  const remove = (id: string) => setItems((prev) => prev.filter((i) => i.id !== id));
+  const clear = () => setItems([]);
+  return <CartContext.Provider value={{ items, toggle, remove, clear }}>{children}</CartContext.Provider>;
+}
+
 function useReveal() {
   useEffect(() => {
     const els = document.querySelectorAll<HTMLElement>(".reveal");
@@ -151,10 +205,12 @@ function Index() {
         <Hero />
         <HairTypes />
         <Barbers />
-        <Services />
-        <ChairShowcase />
-        <InstagramFeed />
-        <Booking />
+        <CartProvider>
+          <Services />
+          <ChairShowcase />
+          <InstagramFeed />
+          <Booking />
+        </CartProvider>
         <SafeSpace />
         <Visit />
       </main>
@@ -262,11 +318,23 @@ function Nav() {
 
 /* ---------------- Floating Book CTA (mobile) ---------------- */
 function FloatingBookNow() {
+  const [inBookingSection, setInBookingSection] = useState(false);
+  useEffect(() => {
+    const bookingEl = document.getElementById("booking");
+    if (!bookingEl) return;
+    const io = new IntersectionObserver(([entry]) => setInBookingSection(entry.isIntersecting), {
+      threshold: 0.15,
+    });
+    io.observe(bookingEl);
+    return () => io.disconnect();
+  }, []);
   return (
     <a
       id="book-now-floating"
       href="#booking"
-      className="fixed bottom-4 right-4 z-40 inline-flex min-h-[44px] items-center gap-2 rounded-full bg-brass px-5 py-3 text-sm font-semibold text-charcoal shadow-lg shadow-black/30 md:hidden"
+      className={`fixed bottom-4 right-4 z-40 inline-flex min-h-[44px] items-center gap-2 rounded-full bg-brass px-5 py-3 text-sm font-semibold text-charcoal shadow-lg shadow-black/30 transition-opacity duration-300 md:hidden ${
+        inBookingSection ? "pointer-events-none opacity-0" : "opacity-100"
+      }`}
       aria-label="Book Now"
     >
       Book Now
@@ -331,9 +399,8 @@ function Hero() {
           </div>
         </div>
         <div className="reveal relative aspect-[4/5] overflow-hidden rounded-2xl border border-border bg-card">
-          {/* TODO: Replace src with your own shop photo */}
           <img
-            src=""
+            src={shopfrontImg}
             alt="Fresh Cutz Barbers shopfront on Canning Road, Wealdstone, Harrow"
             className="h-full w-full object-cover"
             loading="eager"
@@ -367,20 +434,20 @@ function HairTypes() {
     {
       label: "Afro / Coily",
       note: "Fades, shape-ups, tapers, sponge twists — an afro hair barber in Harrow cutting with the grain of your curl pattern.",
-      alt: "Illustration of coily afro hair pattern — afro hair barber Harrow, Fresh Cutz Wealdstone",
-      draw: <CoilyPattern />,
+      alt: "Sharp afro fade with a crisp shape-up lineup — afro hair barber Harrow, Fresh Cutz Wealdstone",
+      src: hairAfroCoilyImg,
     },
     {
       label: "Asian / Straight",
       note: "Clean lines, textured crops, scissor work — Asian hair specialist Harrow, patient with thick, straight hair.",
-      alt: "Illustration of straight Asian hair pattern — Asian hair specialist Harrow, Fresh Cutz Wealdstone",
-      draw: <StraightPattern />,
+      alt: "Modern textured crop on thick straight Asian hair — Asian hair specialist Harrow, Fresh Cutz Wealdstone",
+      src: hairAsianStraightImg,
     },
     {
       label: "Caucasian / Wavy",
       note: "Skin fades, classic side parts, modern crops — precision blends for wavy and straight European hair.",
-      alt: "Illustration of wavy Caucasian hair pattern — barber in Wealdstone, Harrow",
-      draw: <WavyPattern />,
+      alt: "Precision skin fade with a classic side part on wavy hair — barber in Wealdstone, Harrow",
+      src: hairCaucasianWavyImg,
     },
   ];
   return (
@@ -403,12 +470,13 @@ function HairTypes() {
               key={t.label}
               className="reveal group relative overflow-hidden rounded-2xl border border-border bg-background p-6"
             >
-              <div
-                className="aspect-[4/3] overflow-hidden rounded-xl bg-charcoal-2"
-                role="img"
-                aria-label={t.alt}
-              >
-                {t.draw}
+              <div className="aspect-[4/3] overflow-hidden rounded-xl bg-charcoal-2">
+                <img
+                  src={t.src}
+                  alt={t.alt}
+                  loading="lazy"
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
               </div>
               <p className="eyebrow mt-6 text-brass">{t.label}</p>
               <h3 className="mt-2 font-display text-2xl font-semibold">Cut with the grain.</h3>
@@ -480,16 +548,9 @@ function Barbers() {
 
 /* ---------------- Services ---------------- */
 function Services() {
-  const items = [
-    ["Skin fade", "Tight, precise fade — clipper and razor finish.", "25"],
-    ["Classic cut", "Scissor and clipper work, wash and finish.", "25"],
-    ["Taper fade", "Gradual taper with a crisp neckline and finish.", "25"],
-    ["Kids' cut", "Patient, gentle, and unrushed. Ages welcome.", "15"],
-    ["Buzz cut & line-up", "All-over buzz with a sharp edge-up.", "30"],
-    ["Trim & shave", "Haircut and hot-towel shave combo.", "30"],
-    ["Trim & wash", "Cut finished with a wash and style.", "30"],
-    ["Trim & dye", "Cut with a full colour or tone refresh.", "30"],
-  ];
+  const { items, toggle } = useCart();
+  const selectedIds = new Set(items.map((i) => i.id));
+  const total = items.reduce((sum, i) => sum + i.priceFrom, 0);
   return (
     <section id="services" className="border-y border-border/60 bg-charcoal-2/60 py-24">
       <div className="mx-auto max-w-6xl px-5">
@@ -498,25 +559,57 @@ function Services() {
             <p className="eyebrow text-brass">Services</p>
             <h2 className="mt-4 font-display text-4xl font-semibold sm:text-5xl">The menu.</h2>
             <p className="mt-3 text-bone/75">
-              A guide to prices. Final price depends on length, texture and time — Baggio will always talk it through before starting.
+              A guide to prices. Final price depends on length, texture and time — Baggio will
+              always talk it through before starting. Add what you're after, then book below.
             </p>
           </div>
           <p className="eyebrow text-bone/50">Prices in £ · guide only</p>
         </div>
         <ul className="reveal mt-12 divide-y divide-border border-y border-border">
-          {items.map(([name, desc, price]) => (
-            <li key={name} className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4 py-6">
-              <div className="min-w-0">
-                <h3 className="font-display text-2xl font-semibold">{name}</h3>
-                <p className="mt-1 text-sm text-bone/65">{desc}</p>
-              </div>
-              <div className="shrink-0 text-right">
-                <span className="eyebrow text-bone/50">from</span>
-                <span className="ml-2 font-display text-2xl text-brass">£{price}</span>
-              </div>
-            </li>
-          ))}
+          {SERVICES.map((service) => {
+            const selected = selectedIds.has(service.id);
+            return (
+              <li
+                key={service.id}
+                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 py-6 sm:grid-cols-[minmax(0,1fr)_auto_auto]"
+              >
+                <div className="min-w-0">
+                  <h3 className="font-display text-2xl font-semibold">{service.name}</h3>
+                  <p className="mt-1 text-sm text-bone/65">{service.desc}</p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <span className="eyebrow text-bone/50">from</span>
+                  <span className="ml-2 font-display text-2xl text-brass">£{service.priceFrom}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => toggle(service)}
+                  aria-pressed={selected}
+                  className={`col-span-2 min-h-[44px] shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition-colors sm:col-span-1 ${
+                    selected
+                      ? "border-brass bg-brass text-charcoal"
+                      : "border-border text-bone/80 hover:border-brass hover:text-brass"
+                  }`}
+                >
+                  {selected ? "Added ✓" : "Add to booking"}
+                </button>
+              </li>
+            );
+          })}
         </ul>
+        {items.length > 0 && (
+          <div className="reveal mt-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-brass/40 bg-brass/10 px-6 py-4">
+            <p className="text-sm text-bone/80">
+              {items.length} service{items.length > 1 ? "s" : ""} added — from £{total}
+            </p>
+            <a
+              href="#booking"
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-brass px-5 py-2 text-sm font-semibold text-charcoal transition-transform hover:-translate-y-0.5"
+            >
+              Continue to booking →
+            </a>
+          </div>
+        )}
       </div>
     </section>
   );
@@ -526,16 +619,16 @@ function Services() {
 function ChairShowcase() {
   const slots: { src?: string; label?: string; alt: string; span?: string }[] = [
     {
-      src: shopfrontAsset.url,
-      alt: "Fresh Cutz Barbers shopfront, 18 Canning Road, Wealdstone Harrow",
+      src: cuttingHairImg,
+      alt: "Baggio cutting a client's hair at Fresh Cutz Barbers, Wealdstone Harrow",
       span: "sm:col-span-2 sm:row-span-2",
     },
     {
-      src: afroFrontAsset.url,
+      src: afroFrontImg,
       alt: "Finished afro shape-up with sharp lineup at Fresh Cutz Barbers, Wealdstone Harrow",
     },
     {
-      src: afroSideAsset.url,
+      src: afroSideImg,
       alt: "Side view of afro shape-up and defined hairline by Fresh Cutz Barbers, Harrow",
     },
   ];
@@ -645,7 +738,7 @@ function ChairShowcase() {
   );
 }
 
-/* ---------------- Instagram Feed (Recent Cuts) ---------------- */
+/* ---------------- Instagram (Recent Cuts) ---------------- */
 function InstagramFeed() {
   return (
     <section id="recent-cuts" className="border-y border-border/60 bg-charcoal-2/60 py-24">
@@ -654,10 +747,10 @@ function InstagramFeed() {
           <div className="max-w-xl">
             <p className="eyebrow text-brass">Recent cuts</p>
             <h2 className="mt-4 font-display text-4xl font-semibold sm:text-5xl">
-              Fresh from the feed.
+              See the latest on Instagram.
             </h2>
             <p className="mt-3 text-bone/75">
-              The latest work, pulled live from{" "}
+              We post fresh cuts and shop updates on{" "}
               <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="text-brass hover:underline">
                 @fresh.cutz.barbers
               </a>
@@ -672,21 +765,6 @@ function InstagramFeed() {
           >
             Follow on Instagram →
           </a>
-        </div>
-        <div
-          className="reveal mt-10 grid min-h-[320px] grid-cols-2 gap-3 rounded-2xl border border-dashed border-border bg-background/40 p-4 sm:grid-cols-3 md:grid-cols-4"
-          aria-label="Instagram feed placeholder"
-        >
-          {/* INSTAGRAM FEED WIDGET EMBED GOES HERE
-              Paste the embed (Elfsight / SnapWidget / Instagram embed) inside this div.
-              Remove the placeholder tiles below when the widget is live. */}
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div
-              key={i}
-              className="aspect-square rounded-lg border border-border bg-charcoal-2/70"
-              aria-hidden
-            />
-          ))}
         </div>
       </div>
     </section>
@@ -704,8 +782,9 @@ function Booking() {
             Grab a chair.
           </h2>
           <p className="mt-4 text-bone/75">
-            Book online below, or drop us a call / DM. Baggio and Rahul both take
-            walk-ins when the chairs are free.
+            Pick your services, choose a time that works, and send the request. Baggio or Rahul
+            will confirm it, suggest a different time, or reach out directly — either way,
+            you'll get an email.
           </p>
           <p className="mt-4 inline-flex items-center gap-2 text-sm text-bone/70">
             <span className="inline-block h-2 w-2 rounded-full bg-brass" aria-hidden />
@@ -714,114 +793,219 @@ function Booking() {
         </div>
 
         <div className="mt-12 grid gap-8 lg:grid-cols-[1.4fr_1fr]">
-          {/* Booking widget embed */}
-          <div className="reveal">
-            <div
-              className="relative min-h-[520px] w-full overflow-hidden rounded-2xl border border-dashed border-brass/40 bg-card"
-              aria-label="Booking widget placeholder"
-            >
-              {/* BOOKING WIDGET EMBED GOES HERE
-                  Paste the Fresha / Squire / Booksy embed code inside this div.
-                  Keep the min-height so layout doesn't shift when the iframe loads. */}
-              <div className="grid h-full min-h-[520px] w-full place-items-center p-8 text-center">
-                <div>
-                  <p className="eyebrow text-brass">Booking widget</p>
-                  <p className="mt-3 font-display text-2xl">
-                    Drop in your Fresha / Squire / Booksy embed here.
-                  </p>
-                  <p className="mt-2 text-sm text-bone/60">
-                    Replace this placeholder in <code>src/routes/index.tsx</code> —
-                    look for <code>BOOKING WIDGET EMBED GOES HERE</code>.
-                  </p>
-                </div>
-              </div>
-            </div>
-            <p className="mt-4 text-sm text-bone/70">
-              Prefer to call or message?{" "}
-              <a href={PHONE_HREF_RAW} className="text-brass hover:underline">
+          <BookingForm />
+
+          <div className="reveal space-y-6">
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <p className="eyebrow text-brass">Prefer to talk first?</p>
+              <p className="mt-3 text-sm text-bone/75">
+                Call, or drop us a DM — Baggio and Rahul both take walk-ins when the chairs are
+                free.
+              </p>
+              <a
+                href={PHONE_HREF_RAW}
+                className="mt-4 block font-display text-xl text-brass hover:underline"
+              >
                 {PHONE_DISPLAY}
-              </a>{" "}
-              ·{" "}
-              <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="text-brass hover:underline">
+              </a>
+              <a
+                href={INSTAGRAM_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-2 block text-sm text-brass hover:underline"
+              >
                 @fresh.cutz.barbers
               </a>
-            </p>
+            </div>
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <p className="eyebrow text-brass">Opening hours</p>
+              <table className="mt-3 w-full text-sm">
+                <tbody>
+                  <tr className="border-b border-border last:border-0">
+                    <th className="py-2 text-left font-normal text-bone/80">Mon – Sat</th>
+                    <td className="py-2 text-right text-brass">10:00 – 20:00</td>
+                  </tr>
+                  <tr>
+                    <th className="py-2 text-left font-normal text-bone/80">Sunday</th>
+                    <td className="py-2 text-right text-brass">10:00 – 18:00</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-
-          {/* Fallback contact form */}
-          <ContactForm />
         </div>
       </div>
     </section>
   );
 }
 
-function ContactForm() {
-  const [sent, setSent] = useState(false);
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+const inputCls =
+  "mt-1 block w-full min-h-[44px] rounded-md border border-border bg-background px-3 py-2 text-sm text-bone placeholder:text-bone/40 focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40";
+
+function BookingForm() {
+  const { items, remove, clear } = useCart();
+  const [status, setStatus] = useState<"idle" | "pending" | "sent" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState("");
+  const total = items.reduce((sum, i) => sum + i.priceFrom, 0);
+  const todayISO = new Date().toISOString().slice(0, 10);
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    // TODO: Wire form submissions to an email service (e.g. Resend, Formspree)
-    // or CRM. Read fields from new FormData(e.currentTarget).
-    setSent(true);
+    if (items.length === 0) {
+      setStatus("error");
+      setErrorMessage("Pick at least one service above before booking.");
+      return;
+    }
+    const form = new FormData(e.currentTarget);
+    const barber = form.get("barber");
+    setStatus("pending");
+    setErrorMessage("");
+    try {
+      const result = await createBooking({
+        data: {
+          customerName: String(form.get("name") || ""),
+          customerEmail: String(form.get("email") || ""),
+          customerPhone: String(form.get("phone") || "") || undefined,
+          services: items.map((i) => ({ name: i.name, priceFrom: i.priceFrom })),
+          preferredBarber: barber === "baggio" || barber === "rahul" ? barber : null,
+          preferredDate: String(form.get("date") || ""),
+          preferredTime: String(form.get("time") || ""),
+          message: String(form.get("message") || "") || undefined,
+        },
+      });
+      if (result.ok) {
+        setStatus("sent");
+        clear();
+      } else {
+        setStatus("error");
+        setErrorMessage(result.error);
+      }
+    } catch {
+      setStatus("error");
+      setErrorMessage("Something went wrong sending your request. Please call us instead.");
+    }
   }
-  const inputCls =
-    "mt-1 block w-full min-h-[44px] rounded-md border border-border bg-background px-3 py-2 text-sm text-bone placeholder:text-bone/40 focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40";
+
+  if (status === "sent") {
+    return (
+      <div className="reveal rounded-2xl border border-brass/40 bg-brass/10 p-8">
+        <p className="eyebrow text-brass">Request sent</p>
+        <h3 className="mt-2 font-display text-2xl font-semibold">Check your email.</h3>
+        <p className="mt-3 text-sm text-bone/75">
+          We've sent a confirmation to your inbox. Baggio or Rahul will confirm, suggest a
+          different time, or get in touch shortly — you'll get another email as soon as they
+          respond.
+        </p>
+        <button
+          type="button"
+          onClick={() => setStatus("idle")}
+          className="mt-6 inline-flex min-h-[44px] items-center rounded-full border border-brass/60 px-5 py-2 text-sm font-medium text-brass hover:bg-brass hover:text-charcoal"
+        >
+          Book another
+        </button>
+      </div>
+    );
+  }
+
   return (
     <form
       onSubmit={handleSubmit}
-      className="reveal rounded-2xl border border-border bg-card p-6"
-      aria-label="Contact Fresh Cutz Barbers"
+      className="reveal rounded-2xl border border-border bg-card p-6 sm:p-8"
+      aria-label="Book an appointment"
     >
-      <p className="eyebrow text-brass">Or leave your details</p>
-      <h3 className="mt-2 font-display text-2xl font-semibold">We'll get back to you.</h3>
-      {sent ? (
-        <p className="mt-6 rounded-md border border-brass/40 bg-brass/10 p-4 text-sm text-bone">
-          Thanks — we'll be in touch shortly.
+      <p className="eyebrow text-brass">Your booking</p>
+      <h3 className="mt-2 font-display text-2xl font-semibold">Services selected</h3>
+      {items.length === 0 ? (
+        <p className="mt-4 rounded-md border border-dashed border-border p-4 text-sm text-bone/60">
+          No services added yet.{" "}
+          <a href="#services" className="text-brass hover:underline">
+            Pick from the menu
+          </a>{" "}
+          above.
         </p>
       ) : (
-        <div className="mt-6 space-y-4">
-          <label className="block text-sm text-bone/80">
-            Name
-            <input name="name" required className={inputCls} placeholder="Your name" />
-          </label>
-          <label className="block text-sm text-bone/80">
-            Phone or email
-            <input
-              name="contact"
-              required
-              className={inputCls}
-              placeholder="07…  or  you@email.com"
-            />
-          </label>
-          <label className="block text-sm text-bone/80">
-            Preferred barber
-            <select name="barber" className={inputCls} defaultValue="">
-              <option value="">No preference</option>
-              <option value="baggio">Baggio</option>
-              <option value="rahul">Rahul</option>
-            </select>
-          </label>
-          <label className="block text-sm text-bone/80">
-            Message <span className="text-bone/50">(optional)</span>
-            <textarea
-              name="message"
-              rows={3}
-              className={inputCls}
-              placeholder="What are you after?"
-            />
-          </label>
-          <button
-            type="submit"
-            className="inline-flex min-h-[44px] w-full items-center justify-center rounded-full bg-brass px-6 py-3 font-semibold text-charcoal hover:-translate-y-0.5 transition-transform"
-          >
-            Send
-          </button>
-          <p className="text-xs text-bone/50">
-            {/* TODO: Wire form submission handler in ContactForm() to email service / CRM. */}
-            We'll only use these details to get back to you about your booking.
-          </p>
-        </div>
+        <ul className="mt-4 divide-y divide-border">
+          {items.map((item) => (
+            <li key={item.id} className="flex items-center justify-between gap-3 py-3">
+              <span className="text-sm text-bone/85">{item.name}</span>
+              <span className="flex items-center gap-3">
+                <span className="text-sm text-brass">from £{item.priceFrom}</span>
+                <button
+                  type="button"
+                  onClick={() => remove(item.id)}
+                  aria-label={`Remove ${item.name}`}
+                  className="text-bone/40 hover:text-crimson"
+                >
+                  ✕
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
       )}
+      {items.length > 0 && (
+        <p className="mt-4 flex items-center justify-between border-t border-border pt-4 text-sm">
+          <span className="text-bone/70">Total</span>
+          <span className="font-display text-xl text-brass">from £{total}</span>
+        </p>
+      )}
+
+      <div className="mt-8 grid gap-4 sm:grid-cols-2">
+        <label className="block text-sm text-bone/80">
+          Name
+          <input name="name" required className={inputCls} placeholder="Your name" />
+        </label>
+        <label className="block text-sm text-bone/80">
+          Phone <span className="text-bone/50">(optional)</span>
+          <input name="phone" type="tel" className={inputCls} placeholder="07…" />
+        </label>
+        <label className="block text-sm text-bone/80 sm:col-span-2">
+          Email
+          <input name="email" type="email" required className={inputCls} placeholder="you@email.com" />
+        </label>
+        <label className="block text-sm text-bone/80 sm:col-span-2">
+          Preferred barber
+          <select name="barber" className={inputCls} defaultValue="">
+            <option value="">No preference</option>
+            <option value="baggio">Baggio</option>
+            <option value="rahul">Rahul</option>
+          </select>
+        </label>
+        <label className="block text-sm text-bone/80">
+          Preferred date
+          <input name="date" type="date" required min={todayISO} className={inputCls} />
+        </label>
+        <label className="block text-sm text-bone/80">
+          Preferred time
+          <input name="time" type="time" required className={inputCls} />
+        </label>
+        <label className="block text-sm text-bone/80 sm:col-span-2">
+          Anything we should know? <span className="text-bone/50">(optional)</span>
+          <textarea
+            name="message"
+            rows={3}
+            className={inputCls}
+            placeholder="Reference photos, length, allergies…"
+          />
+        </label>
+      </div>
+
+      {status === "error" && (
+        <p className="mt-4 rounded-md border border-crimson/50 bg-crimson/10 p-3 text-sm text-bone">
+          {errorMessage}
+        </p>
+      )}
+
+      <button
+        type="submit"
+        disabled={status === "pending"}
+        className="mt-6 inline-flex min-h-[44px] w-full items-center justify-center rounded-full bg-brass px-6 py-3 font-semibold text-charcoal transition-transform hover:-translate-y-0.5 disabled:opacity-60 disabled:hover:translate-y-0"
+      >
+        {status === "pending" ? "Sending…" : "Request booking"}
+      </button>
+      <p className="mt-3 text-xs text-bone/50">
+        This sends a request — Baggio or Rahul will confirm the time before it's locked in.
+      </p>
     </form>
   );
 }
@@ -987,71 +1171,6 @@ function Footer() {
 }
 
 /* ---------------- SVG illustrations ---------------- */
-function ScissorsMark({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className={className}>
-      <circle cx="6" cy="17" r="3" />
-      <circle cx="18" cy="17" r="3" />
-      <path d="M8.5 14.5 20 4M15.5 14.5 4 4" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-
-function CoilyPattern() {
-  return (
-    <svg viewBox="0 0 200 150" className="h-full w-full" aria-hidden>
-      {Array.from({ length: 7 }).map((_, r) =>
-        Array.from({ length: 10 }).map((_, c) => (
-          <circle
-            key={`${r}-${c}`}
-            cx={12 + c * 20 + (r % 2 ? 8 : 0)}
-            cy={14 + r * 18}
-            r="6"
-            fill="none"
-            stroke="oklch(0.78 0.13 82)"
-            strokeWidth="1.2"
-          />
-        )),
-      )}
-    </svg>
-  );
-}
-
-function StraightPattern() {
-  return (
-    <svg viewBox="0 0 200 150" className="h-full w-full" aria-hidden>
-      {Array.from({ length: 24 }).map((_, i) => (
-        <line
-          key={i}
-          x1={10 + i * 8}
-          y1="10"
-          x2={10 + i * 8}
-          y2="140"
-          stroke="oklch(0.78 0.13 82)"
-          strokeWidth="1.2"
-        />
-      ))}
-    </svg>
-  );
-}
-
-function WavyPattern() {
-  return (
-    <svg viewBox="0 0 200 150" className="h-full w-full" aria-hidden>
-      {Array.from({ length: 9 }).map((_, i) => (
-        <path
-          key={i}
-          d={`M0 ${18 + i * 15} Q 25 ${8 + i * 15}, 50 ${18 + i * 15} T 100 ${18 + i * 15} T 150 ${18 + i * 15} T 200 ${18 + i * 15}`}
-          fill="none"
-          stroke="oklch(0.78 0.13 82)"
-          strokeWidth="1.2"
-        />
-      ))}
-    </svg>
-  );
-}
-
 function ScissorsBig() {
   return (
     <svg viewBox="0 0 600 400" className="h-full w-full" fill="none" aria-hidden>
