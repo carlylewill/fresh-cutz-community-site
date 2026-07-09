@@ -573,11 +573,11 @@ function ChairShowcase() {
         </div>
 
         {/* Part A: gallery grid */}
-        <div className="reveal mt-12 grid auto-rows-[minmax(0,1fr)] grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="reveal mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3">
           {slots.map((s) => (
             <figure
               key={s.alt}
-              className={`relative aspect-[4/3] overflow-hidden rounded-xl border border-border bg-charcoal-2 ${s.span ?? ""}`}
+              className={`relative aspect-[9/16] overflow-hidden rounded-xl border border-border bg-charcoal-2`}
             >
               {s.src ? (
                 <img
