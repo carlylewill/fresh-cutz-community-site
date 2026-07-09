@@ -176,7 +176,11 @@ function Nav() {
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
         <a href="#top" className="flex items-center gap-2">
-          <ScissorsMark className="h-6 w-6 text-brass" />
+          <img
+            src="/logo.png"
+            alt="Fresh Cutz Barbers"
+            className="h-10 w-10 rounded-full object-cover"
+          />
           <span className="font-display text-lg font-semibold tracking-tight">
             Fresh Cutz <span className="text-brass">Barbers</span>
           </span>
