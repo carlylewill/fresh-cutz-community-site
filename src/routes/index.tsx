@@ -1,5 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
+import shopfrontAsset from "@/assets/shopfront.jpeg.asset.json";
+import afroFrontAsset from "@/assets/afro-front.jpeg.asset.json";
+import afroSideAsset from "@/assets/afro-side.jpeg.asset.json";
 
 /*
  * ============================================================================
@@ -521,31 +524,19 @@ function Services() {
 
 /* ---------------- Chair Showcase (gallery + testimonials) ---------------- */
 function ChairShowcase() {
-  const slots: { label: string; alt: string; span?: string }[] = [
+  const slots: { src?: string; label?: string; alt: string; span?: string }[] = [
     {
-      label: "[Add photo: shopfront on Canning Road]",
+      src: shopfrontAsset.url,
       alt: "Fresh Cutz Barbers shopfront, 18 Canning Road, Wealdstone Harrow",
       span: "sm:col-span-2 sm:row-span-2",
     },
     {
-      label: "[Add photo: Baggio cutting a fade]",
-      alt: "Baggio the barber cutting a skin fade at Fresh Cutz, Wealdstone Harrow",
+      src: afroFrontAsset.url,
+      alt: "Finished afro shape-up with sharp lineup at Fresh Cutz Barbers, Wealdstone Harrow",
     },
     {
-      label: "[Add photo: Rahul finishing a scissor cut]",
-      alt: "Rahul, Asian hair specialist, finishing a scissor cut at Fresh Cutz Harrow",
-    },
-    {
-      label: "[Add photo: kids' first haircut]",
-      alt: "Kids' first haircut at Fresh Cutz Barbers, Wealdstone Harrow",
-    },
-    {
-      label: "[Add photo: finished afro shape-up]",
-      alt: "Finished afro shape-up by a Harrow afro hair barber",
-    },
-    {
-      label: "[Add photo: shop interior chairs & mirrors]",
-      alt: "Inside Fresh Cutz Barbers — chairs and mirrors, Wealdstone Harrow",
+      src: afroSideAsset.url,
+      alt: "Side view of afro shape-up and defined hairline by Fresh Cutz Barbers, Harrow",
     },
   ];
   const reviews = [
@@ -585,17 +576,25 @@ function ChairShowcase() {
         <div className="reveal mt-12 grid auto-rows-[minmax(0,1fr)] grid-cols-2 gap-4 sm:grid-cols-4">
           {slots.map((s) => (
             <figure
-              key={s.label}
+              key={s.alt}
               className={`relative aspect-[4/3] overflow-hidden rounded-xl border border-border bg-charcoal-2 ${s.span ?? ""}`}
             >
-              {/* TODO: Replace with <img src="..." alt="..." /> — keep alt text descriptive */}
-              <div
-                role="img"
-                aria-label={s.alt}
-                className="grid h-full w-full place-items-center p-4 text-center text-xs text-bone/50"
-              >
-                {s.label}
-              </div>
+              {s.src ? (
+                <img
+                  src={s.src}
+                  alt={s.alt}
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div
+                  role="img"
+                  aria-label={s.alt}
+                  className="grid h-full w-full place-items-center p-4 text-center text-xs text-bone/50"
+                >
+                  {s.label}
+                </div>
+              )}
             </figure>
           ))}
         </div>
