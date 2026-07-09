@@ -176,7 +176,11 @@ function Nav() {
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
         <a href="#top" className="flex items-center gap-2">
-          <ScissorsMark className="h-6 w-6 text-brass" />
+          <img
+            src="/logo.png"
+            alt="Fresh Cutz Barbers"
+            className="h-10 w-10 rounded-full object-cover"
+          />
           <span className="font-display text-lg font-semibold tracking-tight">
             Fresh Cutz <span className="text-brass">Barbers</span>
           </span>
@@ -934,7 +938,11 @@ function Footer() {
       <div className="mx-auto grid max-w-6xl gap-10 px-5 md:grid-cols-4">
         <div>
           <div className="flex items-center gap-2">
-            <ScissorsMark className="h-6 w-6 text-brass" />
+            <img
+              src="/logo.png"
+              alt="Fresh Cutz Barbers"
+              className="h-8 w-8 rounded-full object-cover"
+            />
             <span className="font-display text-lg font-semibold">Fresh Cutz Barbers</span>
           </div>
           <p className="mt-3 text-sm text-bone/60">
