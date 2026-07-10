@@ -194,7 +194,13 @@
 }
 
 @utility marquee-track {
-  animation: marquee 26s linear infinite;
+  animation: marquee 34s linear infinite;
+}
+
+@utility marquee-outline {
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--bone);
+  text-stroke: 1.5px var(--bone);
 }
 
 @keyframes marquee {

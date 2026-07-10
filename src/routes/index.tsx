@@ -221,8 +221,8 @@ function Nav() {
     ["Visit", "#visit"],
   ];
   return (
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
+    <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-5 sm:pt-5">
+      <div className="mx-auto flex max-w-6xl items-center justify-between rounded-full border border-bone/10 bg-charcoal/55 px-4 py-2.5 shadow-lg shadow-black/20 backdrop-blur-md sm:px-6 sm:py-3">
         <a href="#top" className="flex items-center gap-2">
           <img
             src="/logo.png"
@@ -272,8 +272,8 @@ function Nav() {
         </button>
       </div>
       {open && (
-        <div className="border-t border-border md:hidden">
-          <div className="mx-auto flex max-w-6xl flex-col px-5 py-4">
+        <div className="mx-auto mt-2 max-w-6xl rounded-3xl border border-bone/10 bg-charcoal/90 shadow-lg shadow-black/30 backdrop-blur-md md:hidden">
+          <div className="flex max-w-6xl flex-col px-5 py-4">
             {links.map(([label, href]) => (
               <a
                 key={href}
@@ -345,94 +345,79 @@ function FloatingBookNow() {
 /* ---------------- Hero ---------------- */
 function Hero() {
   return (
-    <section id="top" className="relative overflow-hidden">
-      <BackdropPattern />
-      <div className="relative mx-auto grid max-w-6xl gap-12 px-5 pb-24 pt-16 md:grid-cols-[1.15fr_1fr] md:pt-24">
-        <div className="reveal">
-          <p className="eyebrow text-brass">Barber in Wealdstone, Harrow · Est. 2009</p>
-          <h1 className="mt-5 font-display text-6xl leading-[0.98] font-semibold tracking-tight sm:text-7xl md:text-8xl">
-            Every hair type,
-            <br />
-            <span className="italic text-brass">unhurried</span> and
-            <br />
-            cut with care.
-          </h1>
-          <p className="mt-6 max-w-lg text-lg text-bone/75">
-            A neighbourhood barber in Wealdstone, Harrow — an afro hair barber, Asian
-            hair specialist and go-to for kids' first haircuts. Coils, waves, straight:
-            bring whatever you've got, we'll take the time to get it right.
-          </p>
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            <span className="inline-flex items-center gap-2 rounded-full border border-brass/50 bg-brass/10 px-3 py-1.5 text-sm font-medium text-brass">
-              <span aria-hidden>★</span>
-              {RATING} · {REVIEW_COUNT} Google Reviews
-            </span>
-            <span className="text-sm text-bone/70">Trusted by regulars for 20+ years.</span>
-          </div>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <a
-              id="book-now-hero"
-              href="#booking"
-              className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-brass px-6 py-3 font-medium text-charcoal transition-transform hover:-translate-y-0.5"
-            >
-              Book Now
-              <span aria-hidden>→</span>
-            </a>
-            <a
-              href={PHONE_HREF_RAW}
-              className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-bone/40 px-6 py-3 font-medium text-bone transition-colors hover:border-brass hover:text-brass"
-            >
-              Call {PHONE_DISPLAY}
-            </a>
-          </div>
-          <p className="mt-4 text-sm text-bone/60">
-            <span className="mr-2 inline-block h-2 w-2 rounded-full bg-brass" aria-hidden />
-            Next available: <span className="text-bone/90">{NEXT_AVAILABLE}</span>
-          </p>
-          <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-2 text-sm text-bone/60">
-            <span>17+ years in the community</span>
-            <span className="hidden h-1 w-1 rounded-full bg-brass/60 sm:inline-block" />
-            <span>All hair types welcome</span>
-            <span className="hidden h-1 w-1 rounded-full bg-brass/60 sm:inline-block" />
-            <span>Kids' first cuts</span>
-          </div>
+    <section id="top" className="relative isolate flex min-h-[100svh] flex-col overflow-hidden">
+      <video
+        className="absolute inset-0 -z-10 h-full w-full object-cover"
+        poster="/videos/hero-entrance-poster.jpg"
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        aria-label="A customer walking into Fresh Cutz Barbers on Canning Road, Wealdstone, Harrow"
+      >
+        <source src="/videos/hero-entrance.mp4" type="video/mp4" />
+      </video>
+      <div className="absolute inset-0 -z-10 bg-gradient-to-t from-charcoal via-charcoal/75 to-charcoal/25" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-charcoal/95 via-charcoal/55 to-transparent" />
+
+      <div className="absolute right-4 top-20 z-10 sm:right-5 sm:top-24">
+        <OpenStatusBadge />
+      </div>
+
+      <div className="reveal relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-5 pb-16 pt-28 sm:pt-32">
+        <p className="eyebrow text-brass">Barber in Wealdstone, Harrow · Est. 2009</p>
+        <h1 className="mt-5 max-w-3xl font-display text-6xl leading-[0.96] font-semibold tracking-tight sm:text-7xl md:text-8xl lg:text-[8.5rem]">
+          Every hair type,
+          <br />
+          <span className="italic text-brass">unhurried</span> and
+          <br />
+          cut with care.
+        </h1>
+        <p className="mt-6 max-w-lg text-lg text-bone/85">
+          A neighbourhood barber in Wealdstone, Harrow — an afro hair barber, Asian
+          hair specialist and go-to for kids' first haircuts. Coils, waves, straight:
+          bring whatever you've got, we'll take the time to get it right.
+        </p>
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <span className="inline-flex items-center gap-2 rounded-full border border-brass/50 bg-charcoal/60 px-3 py-1.5 text-sm font-medium text-brass backdrop-blur">
+            <span aria-hidden>★</span>
+            {RATING} · {REVIEW_COUNT} Google Reviews
+          </span>
+          <span className="text-sm text-bone/75">Trusted by regulars for 20+ years.</span>
         </div>
-        <div className="reveal relative aspect-[4/5] overflow-hidden rounded-2xl border border-border bg-card">
-          <video
-            className="h-full w-full object-cover"
-            poster="/videos/hero-entrance-poster.jpg"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            aria-label="A customer walking into Fresh Cutz Barbers on Canning Road, Wealdstone, Harrow"
+        <div className="mt-8 flex flex-wrap gap-3">
+          <a
+            id="book-now-hero"
+            href="#booking"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-brass px-6 py-3 font-medium text-charcoal transition-transform hover:-translate-y-0.5"
           >
-            <source src="/videos/hero-entrance.mp4" type="video/mp4" />
-          </video>
-          <div className="absolute right-3 top-3">
-            <OpenStatusBadge />
-          </div>
+            Book Now
+            <span aria-hidden>→</span>
+          </a>
+          <a
+            href={PHONE_HREF_RAW}
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-bone/50 bg-charcoal/40 px-6 py-3 font-medium text-bone backdrop-blur transition-colors hover:border-brass hover:text-brass"
+          >
+            Call {PHONE_DISPLAY}
+          </a>
+        </div>
+        <p className="mt-4 text-sm text-bone/70">
+          <span className="mr-2 inline-block h-2 w-2 rounded-full bg-brass" aria-hidden />
+          Next available: <span className="text-bone/90">{NEXT_AVAILABLE}</span>
+        </p>
+      </div>
+
+      <div className="relative z-10 w-full border-t border-bone/15 bg-charcoal/50 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-8 gap-y-2 px-5 py-4 text-xs text-bone/60">
+          <span className="eyebrow">Wealdstone, Harrow</span>
+          <span className="eyebrow">17+ years in the community</span>
+          <span className="eyebrow hidden sm:inline">All hair types welcome</span>
+          <span className="eyebrow hidden md:inline">Kids' first cuts</span>
+          <span className="eyebrow text-brass">Scroll ↓</span>
         </div>
       </div>
     </section>
-  );
-}
-
-function BackdropPattern() {
-  return (
-    <svg
-      aria-hidden
-      className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.07]"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <defs>
-        <pattern id="p" width="42" height="42" patternUnits="userSpaceOnUse">
-          <path d="M0 21h42M21 0v42" stroke="currentColor" strokeWidth="0.5" className="text-brass" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#p)" />
-    </svg>
   );
 }
 
@@ -488,15 +473,27 @@ function Marquee() {
     "EST. 2009",
     "WEALDSTONE, HARROW",
   ];
-  const line = items.join("   ·   ") + "   ·   ";
+  const renderLine = (key: string) => (
+    <div key={key} className="flex shrink-0 items-center">
+      {items.map((item, i) => (
+        <span key={item} className="mx-6 flex items-center sm:mx-10">
+          <span
+            className={`font-label text-4xl font-semibold uppercase tracking-tight sm:text-6xl md:text-7xl ${
+              i % 2 === 0 ? "text-bone" : "marquee-outline"
+            }`}
+          >
+            {item}
+          </span>
+          <span className="ml-6 h-3 w-3 shrink-0 rounded-full bg-brass sm:ml-10" aria-hidden />
+        </span>
+      ))}
+    </div>
+  );
   return (
-    <div
-      aria-hidden
-      className="overflow-hidden border-y border-border/60 bg-charcoal-2/60 py-4"
-    >
-      <div className="marquee-track flex w-max whitespace-nowrap">
-        <span className="eyebrow px-4 text-bone/50">{line}</span>
-        <span className="eyebrow px-4 text-bone/50">{line}</span>
+    <div aria-hidden className="overflow-hidden border-y border-border/60 bg-charcoal py-8 sm:py-10">
+      <div className="marquee-track flex w-max">
+        {renderLine("a")}
+        {renderLine("b")}
       </div>
     </div>
   );
@@ -1338,18 +1335,18 @@ function BookingForm() {
 /* ---------------- Safe Space ---------------- */
 function SafeSpace() {
   return (
-    <section className="relative overflow-hidden border-y border-border/60 bg-charcoal-2/60 py-24">
-      <div className="pointer-events-none absolute inset-0 opacity-10">
+    <section className="relative overflow-hidden bg-bone py-28 text-charcoal sm:py-36">
+      <div className="pointer-events-none absolute inset-0 opacity-[0.08]">
         <ScissorsBig />
       </div>
-      <div className="relative mx-auto max-w-3xl px-5 text-center">
-        <p className="eyebrow reveal text-brass">A safe space</p>
-        <h2 className="reveal mt-4 font-display text-4xl font-semibold leading-[1.1] sm:text-5xl md:text-6xl">
+      <div className="relative mx-auto max-w-4xl px-5 text-center">
+        <p className="eyebrow reveal text-crimson">A safe space</p>
+        <h2 className="reveal mt-6 font-display text-5xl font-semibold leading-[0.98] tracking-tight sm:text-7xl md:text-8xl">
           Bring the nervous first-timer. Bring the toddler.
           <br />
-          <span className="italic text-brass">Bring yourself, exactly as you are.</span>
+          <span className="italic text-crimson">Bring yourself, exactly as you are.</span>
         </h2>
-        <p className="reveal mx-auto mt-6 max-w-2xl text-lg text-bone/75">
+        <p className="reveal mx-auto mt-8 max-w-2xl text-lg text-charcoal/70">
           We're not the cheapest chair on the high street, and we don't want to be. We want the one where kids get their first-ever
           haircut without tears, where grown-ups get exactly what they asked for, and where regulars stay for twenty years because
           they've never had a reason to leave.
