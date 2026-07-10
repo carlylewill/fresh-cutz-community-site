@@ -10,8 +10,10 @@ import {
 } from "react";
 import { createBooking } from "@/functions/bookings";
 import { useSmoothScroll, useScrollReveal, prefersReducedMotion, gsap, ScrollTrigger } from "@/lib/motion";
+import shopfrontImg from "@/assets/shopfront.jpeg";
 import afroFrontImg from "@/assets/afro-front.jpeg";
 import afroSideImg from "@/assets/afro-side.jpeg";
+import toolWallImg from "@/assets/tool-wall.jpg";
 import hairAfroCoilyImg from "@/assets/hair-afro-coily.jpg";
 import hairAsianStraightImg from "@/assets/hair-asian-straight.jpg";
 import hairCaucasianWavyImg from "@/assets/hair-caucasian-wavy.jpg";
@@ -362,22 +364,39 @@ function FloatingBookNow() {
 }
 
 /* ---------------- Hero ---------------- */
+/** Slow continuous zoom on a static photo — gives a still image cinematic life
+ * without needing a video file. */
+function KenBurnsImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
+  const imgRef = useRef<HTMLImageElement | null>(null);
+  useEffect(() => {
+    if (!imgRef.current || prefersReducedMotion()) return;
+    const tween = gsap.fromTo(
+      imgRef.current,
+      { scale: 1, transformOrigin: "60% 30%" },
+      { scale: 1.14, duration: 22, ease: "none", repeat: -1, yoyo: true },
+    );
+    return () => {
+      tween.kill();
+    };
+  }, []);
+  return (
+    <img
+      ref={imgRef}
+      src={src}
+      alt={alt}
+      className={`absolute inset-0 h-full w-full object-cover will-change-transform ${className ?? ""}`}
+    />
+  );
+}
+
 function Hero() {
   return (
     <section id="top" className="relative isolate flex min-h-[100svh] flex-col overflow-hidden">
-      <video
-        className="absolute inset-0 -z-10 h-full w-full object-cover"
-        style={{ objectPosition: "80% center" }}
-        poster="/videos/process-cut-poster.jpg"
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="auto"
-        aria-label="Baggio, owner of Fresh Cutz Barbers, cutting a client's hair in the Wealdstone shop"
-      >
-        <source src="/videos/process-cut.mp4" type="video/mp4" />
-      </video>
+      <KenBurnsImage
+        src={shopfrontImg}
+        alt="Fresh Cutz Barbers shopfront on Canning Road, Wealdstone, Harrow"
+        className="-z-10"
+      />
       <div className="absolute inset-0 -z-10 bg-gradient-to-t from-charcoal via-charcoal/75 to-charcoal/25" />
       <div className="absolute inset-0 -z-10 bg-gradient-to-r from-charcoal/95 via-charcoal/55 to-transparent" />
 
@@ -934,6 +953,14 @@ function ChairShowcase() {
       alt: "Detail work and line-up at Fresh Cutz Barbers, Wealdstone Harrow",
     },
     {
+      video: "/videos/gallery-finish.mp4",
+      alt: "Finishing touches on a fresh cut at Fresh Cutz Barbers, Wealdstone Harrow",
+    },
+    {
+      src: toolWallImg,
+      alt: "The full clipper and trimmer collection at Fresh Cutz Barbers, Wealdstone Harrow",
+    },
+    {
       src: afroSideImg,
       alt: "Side view of afro shape-up and defined hairline by Fresh Cutz Barbers, Harrow",
     },
@@ -972,7 +999,7 @@ function ChairShowcase() {
         </div>
 
         {/* Part A: gallery grid */}
-        <div className="reveal mt-12 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="reveal mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3">
           {slots.map((s) => (
             <figure
               key={s.alt}
