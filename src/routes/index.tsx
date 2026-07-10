@@ -7,6 +7,7 @@ import {
   useState,
   type FormEvent,
   type ReactNode,
+  type RefObject,
 } from "react";
 import { createBooking } from "@/functions/bookings";
 import { useSmoothScroll, useScrollReveal, prefersReducedMotion, gsap, ScrollTrigger } from "@/lib/motion";
@@ -389,11 +390,53 @@ function KenBurnsImage({ src, alt, className }: { src: string; alt: string; clas
   );
 }
 
+/** A portrait clip shown full-frame (never cropped) inside a wide hero: a
+ * blurred, scaled copy fills the edges so the shopfront/subject is always
+ * fully visible instead of getting cover-cropped on wide desktop screens. */
+function HeroVideoLayer({
+  src,
+  poster,
+  loop,
+  layerRef,
+}: {
+  src: string;
+  poster?: string;
+  loop: boolean;
+  layerRef: RefObject<HTMLDivElement | null>;
+}) {
+  return (
+    <div ref={layerRef} className="absolute inset-0 -z-10 overflow-hidden bg-charcoal opacity-0">
+      <video
+        className="absolute inset-0 h-full w-full scale-110 object-cover object-center blur-3xl brightness-[0.45] saturate-150"
+        autoPlay
+        muted
+        loop={loop}
+        playsInline
+        aria-hidden
+      >
+        <source src={src} type="video/mp4" />
+      </video>
+      <video
+        className="absolute inset-0 h-full w-full object-contain"
+        poster={poster}
+        autoPlay
+        muted
+        loop={loop}
+        playsInline
+        preload="auto"
+        aria-hidden
+      >
+        <source src={src} type="video/mp4" />
+      </video>
+    </div>
+  );
+}
+
 /** Three-beat hero reveal: shopfront photo → a walk-up-to-the-door clip →
  * dissolve into real looping footage of Baggio working the chair. */
 function HeroVideoReveal() {
-  const walkinRef = useRef<HTMLVideoElement | null>(null);
-  const loopRef = useRef<HTMLVideoElement | null>(null);
+  const walkinRef = useRef<HTMLDivElement | null>(null);
+  const loopRef = useRef<HTMLDivElement | null>(null);
   const [showVideo, setShowVideo] = useState(false);
   useEffect(() => {
     if (prefersReducedMotion()) return;
@@ -411,31 +454,18 @@ function HeroVideoReveal() {
   if (!showVideo) return null;
   return (
     <>
-      <video
-        ref={walkinRef}
-        className="absolute inset-0 -z-10 h-full w-full object-cover opacity-0"
+      <HeroVideoLayer
+        layerRef={walkinRef}
+        src="/videos/hero-walkin.mp4"
         poster="/videos/hero-walkin-poster.jpg"
-        autoPlay
-        muted
-        playsInline
-        preload="auto"
-        aria-hidden
-      >
-        <source src="/videos/hero-walkin.mp4" type="video/mp4" />
-      </video>
-      <video
-        ref={loopRef}
-        className="absolute inset-0 -z-10 h-full w-full object-cover opacity-0"
+        loop={false}
+      />
+      <HeroVideoLayer
+        layerRef={loopRef}
+        src="/videos/process-cut.mp4"
         poster="/videos/process-cut-poster.jpg"
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="auto"
-        aria-hidden
-      >
-        <source src="/videos/process-cut.mp4" type="video/mp4" />
-      </video>
+        loop={true}
+      />
     </>
   );
 }
@@ -736,6 +766,31 @@ const PROCESS_BEATS = [
   },
 ];
 
+/** One real clip per beat — parallel to PROCESS_BEATS — so the scroll story
+ * actually cycles through different footage instead of looping one video. */
+const PROCESS_MEDIA = [
+  {
+    src: "/videos/gallery-station.mp4",
+    poster: "/videos/gallery-station-poster.jpg",
+    alt: "The tool station at Fresh Cutz Barbers before a cut",
+  },
+  {
+    src: "/videos/process-cut.mp4",
+    poster: "/videos/process-cut-poster.jpg",
+    alt: "Baggio cutting a client's hair at Fresh Cutz Barbers",
+  },
+  {
+    src: "/videos/process-detail.mp4",
+    poster: "/videos/process-detail-poster.jpg",
+    alt: "Detail work on a fresh cut at Fresh Cutz Barbers",
+  },
+  {
+    src: "/videos/gallery-finish.mp4",
+    poster: "/videos/gallery-finish-poster.jpg",
+    alt: "Finishing touches on a fresh cut at Fresh Cutz Barbers",
+  },
+];
+
 /** Portrait phone footage shown full-bleed in a landscape frame: a blurred,
  * scaled copy fills the edges so the sharp centre copy never crops the subject. */
 function CinematicVideo({ src, poster, alt }: { src: string; poster?: string; alt: string }) {
@@ -825,17 +880,21 @@ function ProcessAnimated() {
   const stageRef = useRef<HTMLDivElement | null>(null);
   const beatRefs = useRef<Array<HTMLDivElement | null>>([]);
   const dotRefs = useRef<Array<HTMLSpanElement | null>>([]);
+  const mediaRefs = useRef<Array<HTMLDivElement | null>>([]);
 
   useEffect(() => {
     if (!sectionRef.current || !stageRef.current) return;
     const beats = beatRefs.current.filter((b): b is HTMLDivElement => Boolean(b));
     const dots = dotRefs.current.filter((d): d is HTMLSpanElement => Boolean(d));
+    const media = mediaRefs.current.filter((m): m is HTMLDivElement => Boolean(m));
     if (beats.length === 0) return;
 
     const ctx = gsap.context(() => {
       gsap.set(beats.slice(1), { autoAlpha: 0, y: 24 });
       gsap.set(beats[0], { autoAlpha: 1, y: 0 });
       gsap.set(dots.slice(1), { backgroundColor: "var(--border)", scale: 1 });
+      gsap.set(media.slice(1), { autoAlpha: 0 });
+      gsap.set(media[0], { autoAlpha: 1 });
 
       ScrollTrigger.create({
         trigger: sectionRef.current,
@@ -857,6 +916,9 @@ function ProcessAnimated() {
               overwrite: true,
             }),
           );
+          media.forEach((m, i) =>
+            gsap.to(m, { autoAlpha: i === idx ? 1 : 0, duration: 0.5, overwrite: true }),
+          );
         },
       });
     }, sectionRef);
@@ -867,11 +929,17 @@ function ProcessAnimated() {
   return (
     <section id="process" ref={sectionRef} className="relative bg-charcoal" style={{ height: `${PROCESS_BEATS.length * 100}vh` }}>
       <div ref={stageRef} className="relative h-screen w-full overflow-hidden">
-        <CinematicVideo
-          src="/videos/process-detail.mp4"
-          poster="/videos/process-detail-poster.jpg"
-          alt="A fresh cut in progress at Fresh Cutz Barbers"
-        />
+        {PROCESS_MEDIA.map((media, i) => (
+          <div
+            key={media.src}
+            ref={(el) => {
+              mediaRefs.current[i] = el;
+            }}
+            className="absolute inset-0 opacity-0"
+          >
+            <CinematicVideo src={media.src} poster={media.poster} alt={media.alt} />
+          </div>
+        ))}
         <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/60 to-charcoal/40" />
         <ProcessDecorativeIcons />
         <div className="relative z-10 mx-auto flex h-full max-w-6xl flex-col justify-end px-5 pb-24">
