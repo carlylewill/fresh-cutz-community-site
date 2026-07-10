@@ -186,26 +186,26 @@ function Index() {
   useSmoothScroll();
   useScrollReveal();
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <Nav />
-      <main>
-        <Hero />
-        <Marquee />
-        <HairTypes />
-        <Barbers />
-        <Process />
-        <CartProvider>
+    <CartProvider>
+      <div className="min-h-screen bg-background text-foreground">
+        <Nav />
+        <main>
+          <Hero />
+          <Marquee />
+          <HairTypes />
+          <Barbers />
+          <Process />
           <Services />
           <ChairShowcase />
           <InstagramFeed />
           <Booking />
-        </CartProvider>
-        <SafeSpace />
-        <Visit />
-      </main>
-      <Footer />
-      <FloatingBookNow />
-    </div>
+          <SafeSpace />
+          <Visit />
+        </main>
+        <Footer />
+        <FloatingBookNow />
+      </div>
+    </CartProvider>
   );
 }
 
@@ -252,13 +252,7 @@ function Nav() {
           >
             {PHONE_DISPLAY}
           </a>
-          <a
-            id="book-now-header"
-            href="#booking"
-            className="inline-flex min-h-[44px] items-center rounded-full bg-brass px-5 py-2 text-sm font-semibold text-charcoal transition-transform hover:-translate-y-0.5"
-          >
-            Book Now
-          </a>
+          <NavCartLink />
         </div>
         <button
           aria-label="Menu"
@@ -291,13 +285,7 @@ function Nav() {
             >
               Call {PHONE_DISPLAY}
             </a>
-            <a
-              href="#booking"
-              onClick={() => setOpen(false)}
-              className="mt-3 min-h-[44px] rounded-full bg-brass px-4 py-3 text-center text-sm font-semibold text-charcoal"
-            >
-              Book Now
-            </a>
+            <NavCartLink onClick={() => setOpen(false)} full />
           </div>
         </div>
       )}
@@ -305,8 +293,34 @@ function Nav() {
   );
 }
 
+function NavCartLink({ onClick, full }: { onClick?: () => void; full?: boolean }) {
+  const { items } = useCart();
+  return (
+    <a
+      id="book-now-header"
+      href="#booking"
+      onClick={onClick}
+      className={`inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-brass px-5 py-2 text-sm font-semibold text-charcoal transition-transform hover:-translate-y-0.5 ${
+        full ? "mt-3 w-full py-3" : ""
+      }`}
+    >
+      {items.length > 0 ? (
+        <>
+          Book Now
+          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-charcoal px-1.5 text-xs font-bold text-brass">
+            {items.length}
+          </span>
+        </>
+      ) : (
+        "Book Now"
+      )}
+    </a>
+  );
+}
+
 /* ---------------- Floating Book CTA (mobile) ---------------- */
 function FloatingBookNow() {
+  const { items } = useCart();
   const [hideFloating, setHideFloating] = useState(false);
   useEffect(() => {
     const targets = [document.getElementById("booking"), document.getElementById("book-now-hero")].filter(
@@ -337,6 +351,11 @@ function FloatingBookNow() {
       aria-label="Book Now"
     >
       Book Now
+      {items.length > 0 && (
+        <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-charcoal px-1.5 text-xs font-bold text-brass">
+          {items.length}
+        </span>
+      )}
       <span aria-hidden>→</span>
     </a>
   );
@@ -348,15 +367,16 @@ function Hero() {
     <section id="top" className="relative isolate flex min-h-[100svh] flex-col overflow-hidden">
       <video
         className="absolute inset-0 -z-10 h-full w-full object-cover"
-        poster="/videos/hero-entrance-poster.jpg"
+        style={{ objectPosition: "80% center" }}
+        poster="/videos/process-cut-poster.jpg"
         autoPlay
         muted
         loop
         playsInline
         preload="auto"
-        aria-label="A customer walking into Fresh Cutz Barbers on Canning Road, Wealdstone, Harrow"
+        aria-label="Baggio, owner of Fresh Cutz Barbers, cutting a client's hair in the Wealdstone shop"
       >
-        <source src="/videos/hero-entrance.mp4" type="video/mp4" />
+        <source src="/videos/process-cut.mp4" type="video/mp4" />
       </video>
       <div className="absolute inset-0 -z-10 bg-gradient-to-t from-charcoal via-charcoal/75 to-charcoal/25" />
       <div className="absolute inset-0 -z-10 bg-gradient-to-r from-charcoal/95 via-charcoal/55 to-transparent" />
@@ -411,9 +431,9 @@ function Hero() {
       <div className="relative z-10 w-full border-t border-bone/15 bg-charcoal/50 backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-8 gap-y-2 px-5 py-4 text-xs text-bone/60">
           <span className="eyebrow">Wealdstone, Harrow</span>
-          <span className="eyebrow">17+ years in the community</span>
-          <span className="eyebrow hidden sm:inline">All hair types welcome</span>
-          <span className="eyebrow hidden md:inline">Kids' first cuts</span>
+          <span className="eyebrow hidden sm:inline">17+ years in the community</span>
+          <span className="eyebrow hidden md:inline">All hair types welcome</span>
+          <span className="eyebrow hidden lg:inline">Kids' first cuts</span>
           <span className="eyebrow text-brass">Scroll ↓</span>
         </div>
       </div>
@@ -645,6 +665,37 @@ const PROCESS_BEATS = [
   },
 ];
 
+/** Portrait phone footage shown full-bleed in a landscape frame: a blurred,
+ * scaled copy fills the edges so the sharp centre copy never crops the subject. */
+function CinematicVideo({ src, poster, alt }: { src: string; poster?: string; alt: string }) {
+  return (
+    <div className="absolute inset-0 overflow-hidden bg-charcoal">
+      <video
+        className="absolute inset-0 h-full w-full scale-110 object-cover object-center blur-3xl brightness-[0.45] saturate-150"
+        autoPlay
+        muted
+        loop
+        playsInline
+        aria-hidden
+      >
+        <source src={src} type="video/mp4" />
+      </video>
+      <video
+        className="absolute inset-0 h-full w-full object-contain"
+        poster={poster}
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        aria-label={alt}
+      >
+        <source src={src} type="video/mp4" />
+      </video>
+    </div>
+  );
+}
+
 function ProcessIcon({ path }: { path: string }) {
   return (
     <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden>
@@ -679,17 +730,11 @@ function ProcessReduced() {
         <h2 className="mt-4 font-display text-4xl font-semibold sm:text-5xl">From sit-down to fresh cut.</h2>
       </div>
       <div className="relative mx-auto mt-12 aspect-video max-w-4xl overflow-hidden rounded-2xl border border-border px-0 sm:mx-5 sm:max-w-none lg:mx-auto lg:max-w-4xl">
-        <video
-          className="h-full w-full object-cover"
-          autoPlay
-          muted
-          loop
-          playsInline
+        <CinematicVideo
+          src="/videos/process-cut.mp4"
           poster="/videos/process-cut-poster.jpg"
-          aria-label="Baggio cutting a client's hair at Fresh Cutz Barbers"
-        >
-          <source src="/videos/process-cut.mp4" type="video/mp4" />
-        </video>
+          alt="Baggio cutting a client's hair at Fresh Cutz Barbers"
+        />
       </div>
       <div className="reveal mx-auto mt-12 grid max-w-4xl gap-8 px-5 sm:grid-cols-2">
         {PROCESS_BEATS.map((beat) => (
@@ -751,18 +796,12 @@ function ProcessAnimated() {
   return (
     <section id="process" ref={sectionRef} className="relative bg-charcoal" style={{ height: `${PROCESS_BEATS.length * 100}vh` }}>
       <div ref={stageRef} className="relative h-screen w-full overflow-hidden">
-        <video
-          className="absolute inset-0 h-full w-full object-cover"
-          autoPlay
-          muted
-          loop
-          playsInline
+        <CinematicVideo
+          src="/videos/process-cut.mp4"
           poster="/videos/process-cut-poster.jpg"
-          aria-label="Baggio cutting a client's hair at Fresh Cutz Barbers"
-        >
-          <source src="/videos/process-cut.mp4" type="video/mp4" />
-        </video>
-        <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/50 to-charcoal/20" />
+          alt="Baggio cutting a client's hair at Fresh Cutz Barbers"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/60 to-charcoal/40" />
         <ProcessDecorativeIcons />
         <div className="relative z-10 mx-auto flex h-full max-w-6xl flex-col justify-end px-5 pb-24">
           <p className="eyebrow text-brass">The chair, start to finish</p>
@@ -1221,13 +1260,21 @@ function BookingForm() {
           different time, or get in touch shortly — you'll get another email as soon as they
           respond.
         </p>
-        <button
-          type="button"
-          onClick={() => setStatus("idle")}
-          className="mt-6 inline-flex min-h-[44px] items-center rounded-full border border-brass/60 px-5 py-2 text-sm font-medium text-brass hover:bg-brass hover:text-charcoal"
-        >
-          Book another
-        </button>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() => setStatus("idle")}
+            className="inline-flex min-h-[44px] items-center rounded-full border border-brass/60 px-5 py-2 text-sm font-medium text-brass hover:bg-brass hover:text-charcoal"
+          >
+            Book another
+          </button>
+          <a
+            href="#top"
+            className="inline-flex min-h-[44px] items-center rounded-full px-5 py-2 text-sm font-medium text-bone/70 hover:text-brass"
+          >
+            Back to top ↑
+          </a>
+        </div>
       </div>
     );
   }

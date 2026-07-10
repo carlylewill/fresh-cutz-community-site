@@ -28,7 +28,22 @@ export function useSmoothScroll() {
     gsap.ticker.add(raf);
     gsap.ticker.lagSmoothing(0);
 
+    // Route in-page anchor clicks (nav links, "Book Now", etc.) through Lenis
+    // so they animate smoothly instead of jumping instantly.
+    function onClick(e: MouseEvent) {
+      const anchor = (e.target as HTMLElement).closest("a[href^='#']");
+      if (!anchor) return;
+      const href = anchor.getAttribute("href");
+      if (!href || href === "#") return;
+      const target = document.querySelector(href);
+      if (!target) return;
+      e.preventDefault();
+      lenis.scrollTo(target as HTMLElement, { duration: 1.2 });
+    }
+    document.addEventListener("click", onClick);
+
     return () => {
+      document.removeEventListener("click", onClick);
       gsap.ticker.remove(raf);
       lenis.destroy();
     };
