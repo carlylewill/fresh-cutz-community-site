@@ -396,32 +396,34 @@ function KenBurnsImage({ src, alt, className }: { src: string; alt: string; clas
 function HeroVideoLayer({
   src,
   poster,
-  loop,
   layerRef,
+  videoRefs,
 }: {
   src: string;
   poster?: string;
-  loop: boolean;
   layerRef: RefObject<HTMLDivElement | null>;
+  videoRefs?: RefObject<HTMLVideoElement[]>;
 }) {
   return (
     <div ref={layerRef} className="absolute inset-0 -z-10 overflow-hidden bg-charcoal opacity-0">
       <video
+        ref={(el) => {
+          if (el && videoRefs?.current) videoRefs.current[0] = el;
+        }}
         className="absolute inset-0 h-full w-full scale-110 object-cover object-center blur-3xl brightness-[0.45] saturate-150"
-        autoPlay
         muted
-        loop={loop}
         playsInline
         aria-hidden
       >
         <source src={src} type="video/mp4" />
       </video>
       <video
+        ref={(el) => {
+          if (el && videoRefs?.current) videoRefs.current[1] = el;
+        }}
         className="absolute inset-0 h-full w-full object-contain"
         poster={poster}
-        autoPlay
         muted
-        loop={loop}
         playsInline
         preload="auto"
         aria-hidden
@@ -432,11 +434,15 @@ function HeroVideoLayer({
   );
 }
 
-/** Three-beat hero reveal: shopfront photo → a walk-up-to-the-door clip →
- * dissolve into real looping footage of Baggio working the chair. */
+/** Hero reveal that keeps recurring rather than playing once and getting
+ * stuck: shopfront photo → walk-up-to-the-door clip → real cutting footage
+ * → back to the walk-in clip, on an endless cycle so the shopfront/entrance
+ * beat is never more than ~12s away no matter when someone looks. */
 function HeroVideoReveal() {
   const walkinRef = useRef<HTMLDivElement | null>(null);
   const loopRef = useRef<HTMLDivElement | null>(null);
+  const walkinVideos = useRef<HTMLVideoElement[]>([]);
+  const loopVideos = useRef<HTMLVideoElement[]>([]);
   const [showVideo, setShowVideo] = useState(false);
   useEffect(() => {
     if (prefersReducedMotion()) return;
@@ -444,9 +450,21 @@ function HeroVideoReveal() {
   }, []);
   useEffect(() => {
     if (!showVideo || !walkinRef.current || !loopRef.current) return;
-    const tl = gsap.timeline({ delay: 0.4 });
+    const playFrom = (vids: HTMLVideoElement[], time: number) => {
+      vids.forEach((v) => {
+        v.currentTime = time;
+        v.play().catch(() => {});
+      });
+    };
+    const tl = gsap.timeline({ delay: 0.4, repeat: -1 });
+    tl.call(() => playFrom(walkinVideos.current, 0));
     tl.to(walkinRef.current, { autoAlpha: 1, duration: 0.8, ease: "power1.inOut" });
-    tl.to(loopRef.current, { autoAlpha: 1, duration: 1.2, ease: "power1.inOut" }, "+=3.4");
+    tl.to({}, { duration: 3.4 });
+    tl.call(() => playFrom(loopVideos.current, 0));
+    tl.to(loopRef.current, { autoAlpha: 1, duration: 1.2, ease: "power1.inOut" });
+    tl.to(walkinRef.current, { autoAlpha: 0, duration: 1.2, ease: "power1.inOut" }, "<");
+    tl.to({}, { duration: 6.5 });
+    tl.to(loopRef.current, { autoAlpha: 0, duration: 1.2, ease: "power1.inOut" });
     return () => {
       tl.kill();
     };
@@ -456,15 +474,15 @@ function HeroVideoReveal() {
     <>
       <HeroVideoLayer
         layerRef={walkinRef}
+        videoRefs={walkinVideos}
         src="/videos/hero-walkin.mp4"
         poster="/videos/hero-walkin-poster.jpg"
-        loop={false}
       />
       <HeroVideoLayer
         layerRef={loopRef}
+        videoRefs={loopVideos}
         src="/videos/process-cut.mp4"
         poster="/videos/process-cut-poster.jpg"
-        loop={true}
       />
     </>
   );
