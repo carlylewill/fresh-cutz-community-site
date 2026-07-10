@@ -389,6 +389,57 @@ function KenBurnsImage({ src, alt, className }: { src: string; alt: string; clas
   );
 }
 
+/** Three-beat hero reveal: shopfront photo → a walk-up-to-the-door clip →
+ * dissolve into real looping footage of Baggio working the chair. */
+function HeroVideoReveal() {
+  const walkinRef = useRef<HTMLVideoElement | null>(null);
+  const loopRef = useRef<HTMLVideoElement | null>(null);
+  const [showVideo, setShowVideo] = useState(false);
+  useEffect(() => {
+    if (prefersReducedMotion()) return;
+    setShowVideo(true);
+  }, []);
+  useEffect(() => {
+    if (!showVideo || !walkinRef.current || !loopRef.current) return;
+    const tl = gsap.timeline({ delay: 0.4 });
+    tl.to(walkinRef.current, { autoAlpha: 1, duration: 0.8, ease: "power1.inOut" });
+    tl.to(loopRef.current, { autoAlpha: 1, duration: 1.2, ease: "power1.inOut" }, "+=3.4");
+    return () => {
+      tl.kill();
+    };
+  }, [showVideo]);
+  if (!showVideo) return null;
+  return (
+    <>
+      <video
+        ref={walkinRef}
+        className="absolute inset-0 -z-10 h-full w-full object-cover opacity-0"
+        poster="/videos/hero-walkin-poster.jpg"
+        autoPlay
+        muted
+        playsInline
+        preload="auto"
+        aria-hidden
+      >
+        <source src="/videos/hero-walkin.mp4" type="video/mp4" />
+      </video>
+      <video
+        ref={loopRef}
+        className="absolute inset-0 -z-10 h-full w-full object-cover opacity-0"
+        poster="/videos/process-cut-poster.jpg"
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        aria-hidden
+      >
+        <source src="/videos/process-cut.mp4" type="video/mp4" />
+      </video>
+    </>
+  );
+}
+
 function Hero() {
   return (
     <section id="top" className="relative isolate flex min-h-[100svh] flex-col overflow-hidden">
@@ -397,6 +448,7 @@ function Hero() {
         alt="Fresh Cutz Barbers shopfront on Canning Road, Wealdstone, Harrow"
         className="-z-10"
       />
+      <HeroVideoReveal />
       <div className="absolute inset-0 -z-10 bg-gradient-to-t from-charcoal via-charcoal/75 to-charcoal/25" />
       <div className="absolute inset-0 -z-10 bg-gradient-to-r from-charcoal/95 via-charcoal/55 to-transparent" />
 
@@ -816,9 +868,9 @@ function ProcessAnimated() {
     <section id="process" ref={sectionRef} className="relative bg-charcoal" style={{ height: `${PROCESS_BEATS.length * 100}vh` }}>
       <div ref={stageRef} className="relative h-screen w-full overflow-hidden">
         <CinematicVideo
-          src="/videos/process-cut.mp4"
-          poster="/videos/process-cut-poster.jpg"
-          alt="Baggio cutting a client's hair at Fresh Cutz Barbers"
+          src="/videos/process-detail.mp4"
+          poster="/videos/process-detail-poster.jpg"
+          alt="A fresh cut in progress at Fresh Cutz Barbers"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/60 to-charcoal/40" />
         <ProcessDecorativeIcons />
