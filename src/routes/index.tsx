@@ -59,9 +59,9 @@ export const Route = createFileRoute("/")({
         content:
           "Afro, Asian & Caucasian hair specialists in Wealdstone, Harrow. 17+ years, patient and precise.",
       },
-      { property: "og:url", content: "/" },
+      { property: "og:url", content: "https://freshcutzbarber.co/" },
     ],
-    links: [{ rel: "canonical", href: "/" }],
+    links: [{ rel: "canonical", href: "https://freshcutzbarber.co/" }],
     scripts: [
       {
         type: "application/ld+json",
@@ -69,7 +69,7 @@ export const Route = createFileRoute("/")({
           "@context": "https://schema.org",
           "@type": "HairSalon",
           name: "Fresh Cutz Barbers",
-          image: [],
+          image: ["https://freshcutzbarber.co/og-image.jpg"],
           address: {
             "@type": "PostalAddress",
             streetAddress: "18 Canning Road",
@@ -79,8 +79,13 @@ export const Route = createFileRoute("/")({
             addressCountry: "GB",
           },
           telephone: "+44 7415 409277",
-          url: "/",
+          url: "https://freshcutzbarber.co/",
           sameAs: ["https://www.instagram.com/fresh.cutz.barbers/"],
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: "4.8",
+            reviewCount: "106",
+          },
           priceRange: "££",
           openingHoursSpecification: [
             {
@@ -131,8 +136,8 @@ const MAP_QUERY = encodeURIComponent("Fresh Cutz Barbers, 18 Canning Road, Weald
 const DIRECTIONS_URL = `https://www.google.com/maps/dir/?api=1&destination=${MAP_QUERY}`;
 
 // Editable variables — shop can update these without hunting through JSX.
-const RATING = "4.8"; // TODO: confirm current Google rating before publishing
-const REVIEW_COUNT = "106"; // TODO: confirm current Google review count before publishing
+const RATING = "4.8";
+const REVIEW_COUNT = "106";
 const NEXT_AVAILABLE = "Thursday 2pm"; // Update this line to reflect current availability
 
 type Service = { id: string; name: string; desc: string; priceFrom: number };
