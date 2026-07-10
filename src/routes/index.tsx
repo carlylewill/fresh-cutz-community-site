@@ -8,7 +8,6 @@ import {
   type ReactNode,
 } from "react";
 import { createBooking } from "@/functions/bookings";
-import shopfrontImg from "@/assets/shopfront.jpeg";
 import cuttingHairImg from "@/assets/cutting-hair.jpeg";
 import afroFrontImg from "@/assets/afro-front.jpeg";
 import afroSideImg from "@/assets/afro-side.jpeg";
@@ -404,12 +403,18 @@ function Hero() {
           </div>
         </div>
         <div className="reveal relative aspect-[4/5] overflow-hidden rounded-2xl border border-border bg-card">
-          <img
-            src={shopfrontImg}
-            alt="Fresh Cutz Barbers shopfront on Canning Road, Wealdstone, Harrow"
+          <video
             className="h-full w-full object-cover"
-            loading="eager"
-          />
+            poster="/videos/hero-entrance-poster.jpg"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            aria-label="A customer walking into Fresh Cutz Barbers on Canning Road, Wealdstone, Harrow"
+          >
+            <source src="/videos/hero-entrance.mp4" type="video/mp4" />
+          </video>
         </div>
       </div>
     </section>
