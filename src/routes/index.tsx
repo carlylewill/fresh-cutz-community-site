@@ -3,12 +3,13 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   type FormEvent,
   type ReactNode,
 } from "react";
 import { createBooking } from "@/functions/bookings";
-import cuttingHairImg from "@/assets/cutting-hair.jpeg";
+import { useSmoothScroll, useScrollReveal, prefersReducedMotion, gsap, ScrollTrigger } from "@/lib/motion";
 import afroFrontImg from "@/assets/afro-front.jpeg";
 import afroSideImg from "@/assets/afro-side.jpeg";
 import hairAfroCoilyImg from "@/assets/hair-afro-coily.jpg";
@@ -181,34 +182,18 @@ function CartProvider({ children }: { children: ReactNode }) {
   return <CartContext.Provider value={{ items, toggle, remove, clear }}>{children}</CartContext.Provider>;
 }
 
-function useReveal() {
-  useEffect(() => {
-    const els = document.querySelectorAll<HTMLElement>(".reveal");
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.isIntersecting) {
-            e.target.classList.add("reveal-in");
-            io.unobserve(e.target);
-          }
-        }
-      },
-      { threshold: 0.12 },
-    );
-    els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
-  }, []);
-}
-
 function Index() {
-  useReveal();
+  useSmoothScroll();
+  useScrollReveal();
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Nav />
       <main>
         <Hero />
+        <Marquee />
         <HairTypes />
         <Barbers />
+        <Process />
         <CartProvider>
           <Services />
           <ChairShowcase />
@@ -322,14 +307,24 @@ function Nav() {
 
 /* ---------------- Floating Book CTA (mobile) ---------------- */
 function FloatingBookNow() {
-  const [inBookingSection, setInBookingSection] = useState(false);
+  const [hideFloating, setHideFloating] = useState(false);
   useEffect(() => {
-    const bookingEl = document.getElementById("booking");
-    if (!bookingEl) return;
-    const io = new IntersectionObserver(([entry]) => setInBookingSection(entry.isIntersecting), {
-      threshold: 0.15,
-    });
-    io.observe(bookingEl);
+    const targets = [document.getElementById("booking"), document.getElementById("book-now-hero")].filter(
+      (el): el is HTMLElement => Boolean(el),
+    );
+    if (targets.length === 0) return;
+    const visible = new Set<Element>();
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) visible.add(entry.target);
+          else visible.delete(entry.target);
+        }
+        setHideFloating(visible.size > 0);
+      },
+      { threshold: 0.15 },
+    );
+    targets.forEach((el) => io.observe(el));
     return () => io.disconnect();
   }, []);
   return (
@@ -337,7 +332,7 @@ function FloatingBookNow() {
       id="book-now-floating"
       href="#booking"
       className={`fixed bottom-4 right-4 z-40 inline-flex min-h-[44px] items-center gap-2 rounded-full bg-brass px-5 py-3 text-sm font-semibold text-charcoal shadow-lg shadow-black/30 transition-opacity duration-300 md:hidden ${
-        inBookingSection ? "pointer-events-none opacity-0" : "opacity-100"
+        hideFloating ? "pointer-events-none opacity-0" : "opacity-100"
       }`}
       aria-label="Book Now"
     >
@@ -355,7 +350,7 @@ function Hero() {
       <div className="relative mx-auto grid max-w-6xl gap-12 px-5 pb-24 pt-16 md:grid-cols-[1.15fr_1fr] md:pt-24">
         <div className="reveal">
           <p className="eyebrow text-brass">Barber in Wealdstone, Harrow · Est. 2009</p>
-          <h1 className="mt-5 font-display text-5xl leading-[1.02] font-semibold tracking-tight sm:text-6xl md:text-7xl">
+          <h1 className="mt-5 font-display text-6xl leading-[0.98] font-semibold tracking-tight sm:text-7xl md:text-8xl">
             Every hair type,
             <br />
             <span className="italic text-brass">unhurried</span> and
@@ -415,6 +410,9 @@ function Hero() {
           >
             <source src="/videos/hero-entrance.mp4" type="video/mp4" />
           </video>
+          <div className="absolute right-3 top-3">
+            <OpenStatusBadge />
+          </div>
         </div>
       </div>
     </section>
@@ -435,6 +433,72 @@ function BackdropPattern() {
       </defs>
       <rect width="100%" height="100%" fill="url(#p)" />
     </svg>
+  );
+}
+
+/* ---------------- Live open/closed badge ---------------- */
+function getLondonOpenStatus(): { open: boolean; label: string } {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date());
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  const weekday = get("weekday");
+  const minutesNow = Number(get("hour")) * 60 + Number(get("minute"));
+  const isSunday = weekday === "Sun";
+  const opens = 10 * 60;
+  const closes = isSunday ? 18 * 60 : 20 * 60;
+  const open = minutesNow >= opens && minutesNow < closes;
+  const closingSoon = open && closes - minutesNow <= 30;
+  if (open) return { open: true, label: closingSoon ? "Open · closing soon" : "Open now" };
+  return { open: false, label: minutesNow < opens ? "Opens 10am" : "Closed" };
+}
+
+function OpenStatusBadge() {
+  const [status, setStatus] = useState<{ open: boolean; label: string } | null>(null);
+  useEffect(() => {
+    setStatus(getLondonOpenStatus());
+    const id = setInterval(() => setStatus(getLondonOpenStatus()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+  if (!status) return null;
+  return (
+    <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-charcoal/80 px-3 py-1.5 text-xs font-medium text-bone backdrop-blur">
+      <span
+        className={`h-2 w-2 rounded-full ${status.open ? "bg-emerald-400" : "bg-bone/40"}`}
+        aria-hidden
+      />
+      {status.label}
+    </span>
+  );
+}
+
+/* ---------------- Marquee ---------------- */
+function Marquee() {
+  const items = [
+    "SKIN FADES",
+    "TAPER FADES",
+    "AFRO SPECIALISTS",
+    "KIDS' FIRST CUTS",
+    "HOT TOWEL SHAVES",
+    "WALK-INS WELCOME",
+    "EST. 2009",
+    "WEALDSTONE, HARROW",
+  ];
+  const line = items.join("   ·   ") + "   ·   ";
+  return (
+    <div
+      aria-hidden
+      className="overflow-hidden border-y border-border/60 bg-charcoal-2/60 py-4"
+    >
+      <div className="marquee-track flex w-max whitespace-nowrap">
+        <span className="eyebrow px-4 text-bone/50">{line}</span>
+        <span className="eyebrow px-4 text-bone/50">{line}</span>
+      </div>
+    </div>
   );
 }
 
@@ -465,7 +529,7 @@ function HairTypes() {
       <div className="mx-auto max-w-6xl px-5">
         <div className="reveal max-w-2xl">
           <p className="eyebrow text-brass">The signature</p>
-          <h2 className="mt-4 font-display text-4xl font-semibold sm:text-5xl">
+          <h2 className="mt-4 font-display text-5xl font-semibold tracking-tight sm:text-6xl">
             A barber in Wealdstone for <span className="italic text-brass">all</span> hair types.
           </h2>
           <p className="mt-4 text-bone/75">
@@ -520,7 +584,7 @@ function Barbers() {
       <div className="mx-auto max-w-6xl px-5">
         <div className="reveal max-w-2xl">
           <p className="eyebrow text-brass">Meet the barbers</p>
-          <h2 className="mt-4 font-display text-4xl font-semibold sm:text-5xl">
+          <h2 className="mt-4 font-display text-5xl font-semibold tracking-tight sm:text-6xl">
             Two chairs. Decades of hands-on.
           </h2>
         </div>
@@ -556,6 +620,199 @@ function Barbers() {
   );
 }
 
+/* ---------------- Process (pinned scroll story) ---------------- */
+const PROCESS_BEATS = [
+  {
+    time: "10:02",
+    step: "Consultation",
+    title: "Two minutes before the clippers touch down.",
+    copy: "Length, texture, what's not working right now — Baggio or Rahul talks it through before a single cut, not after.",
+  },
+  {
+    time: "10:09",
+    step: "The cut",
+    title: "Dialled to your hair's grain, not a guard number.",
+    copy: "Skin fades, tapers, scissor work — afro, Asian or Caucasian hair, cut with the pattern it actually grows in.",
+  },
+  {
+    time: "10:24",
+    step: "The detail",
+    title: "The five minutes that make it look intentional.",
+    copy: "Lineups, edge-ups, a hot towel finish. The difference between a haircut and a good haircut.",
+  },
+  {
+    time: "10:31",
+    step: "Out the chair",
+    title: "Mirror check, brush down, done.",
+    copy: "No rush, no small talk you didn't ask for. Unhurried the whole way through.",
+  },
+];
+
+function ProcessIcon({ path }: { path: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden>
+      <path d={path} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ProcessDecorativeIcons() {
+  const icons = [
+    { path: "M6 6l12 12M18 6L6 18M6 6a2 2 0 1 1-.01 0M18 18a2 2 0 1 1 .01 0", className: "left-[8%] top-[18%]" },
+    { path: "M4 12h16M15 7l5 5-5 5", className: "right-[10%] top-[30%] rotate-45" },
+    { path: "M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4", className: "left-[14%] bottom-[22%]" },
+    { path: "M3 12c3-4 15-4 18 0-3 4-15 4-18 0Z", className: "right-[14%] bottom-[16%]" },
+  ];
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 z-[1] hidden sm:block">
+      {icons.map((icon, i) => (
+        <span key={i} className={`absolute text-bone/15 ${icon.className}`}>
+          <ProcessIcon path={icon.path} />
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function ProcessReduced() {
+  return (
+    <section id="process" className="relative overflow-hidden bg-charcoal py-24">
+      <div className="reveal relative mx-auto max-w-3xl px-5 text-center">
+        <p className="eyebrow text-brass">The chair, start to finish</p>
+        <h2 className="mt-4 font-display text-4xl font-semibold sm:text-5xl">From sit-down to fresh cut.</h2>
+      </div>
+      <div className="relative mx-auto mt-12 aspect-video max-w-4xl overflow-hidden rounded-2xl border border-border px-0 sm:mx-5 sm:max-w-none lg:mx-auto lg:max-w-4xl">
+        <video
+          className="h-full w-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+          poster="/videos/process-cut-poster.jpg"
+          aria-label="Baggio cutting a client's hair at Fresh Cutz Barbers"
+        >
+          <source src="/videos/process-cut.mp4" type="video/mp4" />
+        </video>
+      </div>
+      <div className="reveal mx-auto mt-12 grid max-w-4xl gap-8 px-5 sm:grid-cols-2">
+        {PROCESS_BEATS.map((beat) => (
+          <div key={beat.step}>
+            <p className="font-display text-lg text-brass">{beat.time} · {beat.step}</p>
+            <h3 className="mt-1 font-display text-xl font-semibold">{beat.title}</h3>
+            <p className="mt-2 text-sm text-bone/70">{beat.copy}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ProcessAnimated() {
+  const sectionRef = useRef<HTMLDivElement | null>(null);
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const beatRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const dotRefs = useRef<Array<HTMLSpanElement | null>>([]);
+
+  useEffect(() => {
+    if (!sectionRef.current || !stageRef.current) return;
+    const beats = beatRefs.current.filter((b): b is HTMLDivElement => Boolean(b));
+    const dots = dotRefs.current.filter((d): d is HTMLSpanElement => Boolean(d));
+    if (beats.length === 0) return;
+
+    const ctx = gsap.context(() => {
+      gsap.set(beats.slice(1), { autoAlpha: 0, y: 24 });
+      gsap.set(beats[0], { autoAlpha: 1, y: 0 });
+      gsap.set(dots.slice(1), { backgroundColor: "var(--border)", scale: 1 });
+
+      ScrollTrigger.create({
+        trigger: sectionRef.current,
+        start: "top top",
+        end: "bottom bottom",
+        pin: stageRef.current,
+        scrub: 0.6,
+        onUpdate: (self) => {
+          const idx = Math.min(beats.length - 1, Math.round(self.progress * (beats.length - 1)));
+          beats.forEach((b, i) => {
+            if (i === idx) gsap.to(b, { autoAlpha: 1, y: 0, duration: 0.35, overwrite: true });
+            else gsap.to(b, { autoAlpha: 0, y: i < idx ? -16 : 24, duration: 0.35, overwrite: true });
+          });
+          dots.forEach((d, i) =>
+            gsap.to(d, {
+              backgroundColor: i <= idx ? "var(--brass)" : "var(--border)",
+              scale: i === idx ? 1.4 : 1,
+              duration: 0.3,
+              overwrite: true,
+            }),
+          );
+        },
+      });
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, []);
+
+  return (
+    <section id="process" ref={sectionRef} className="relative bg-charcoal" style={{ height: `${PROCESS_BEATS.length * 100}vh` }}>
+      <div ref={stageRef} className="relative h-screen w-full overflow-hidden">
+        <video
+          className="absolute inset-0 h-full w-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+          poster="/videos/process-cut-poster.jpg"
+          aria-label="Baggio cutting a client's hair at Fresh Cutz Barbers"
+        >
+          <source src="/videos/process-cut.mp4" type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/50 to-charcoal/20" />
+        <ProcessDecorativeIcons />
+        <div className="relative z-10 mx-auto flex h-full max-w-6xl flex-col justify-end px-5 pb-24">
+          <p className="eyebrow text-brass">The chair, start to finish</p>
+          <div className="relative mt-4 h-56 sm:h-44">
+            {PROCESS_BEATS.map((beat, i) => (
+              <div
+                key={beat.step}
+                ref={(el) => {
+                  beatRefs.current[i] = el;
+                }}
+                className="absolute inset-x-0 top-0 max-w-2xl"
+              >
+                <p className="font-display text-2xl text-brass">{beat.time}</p>
+                <h3 className="mt-1 font-display text-4xl font-semibold sm:text-5xl">{beat.title}</h3>
+                <p className="mt-3 max-w-lg text-bone/80">{beat.copy}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-10 flex items-center gap-3">
+            {PROCESS_BEATS.map((beat, i) => (
+              <div key={beat.step} className="flex flex-1 items-center gap-3">
+                <span
+                  ref={(el) => {
+                    dotRefs.current[i] = el;
+                  }}
+                  className="h-2.5 w-2.5 shrink-0 rounded-full bg-border transition-transform"
+                />
+                <span className="eyebrow hidden text-bone/50 sm:inline">{beat.step}</span>
+                {i < PROCESS_BEATS.length - 1 && <span className="h-px flex-1 bg-border/60" aria-hidden />}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Process() {
+  const [reduced, setReduced] = useState<boolean | null>(null);
+  useEffect(() => {
+    setReduced(prefersReducedMotion());
+  }, []);
+  if (reduced === null) return null;
+  return reduced ? <ProcessReduced /> : <ProcessAnimated />;
+}
+
 /* ---------------- Services ---------------- */
 function Services() {
   const { items, toggle } = useCart();
@@ -567,7 +824,7 @@ function Services() {
         <div className="reveal flex flex-wrap items-end justify-between gap-6">
           <div className="max-w-xl">
             <p className="eyebrow text-brass">Services</p>
-            <h2 className="mt-4 font-display text-4xl font-semibold sm:text-5xl">Services & prices.</h2>
+            <h2 className="mt-4 font-display text-5xl font-semibold tracking-tight sm:text-6xl">Services & prices.</h2>
             <p className="mt-3 text-bone/75">
               A guide to prices. Final price depends on length, texture and time — Baggio will
               always talk it through before starting. Add what you're after, then book below.
@@ -627,15 +884,18 @@ function Services() {
 
 /* ---------------- Chair Showcase (gallery + testimonials) ---------------- */
 function ChairShowcase() {
-  const slots: { src?: string; label?: string; alt: string; span?: string }[] = [
+  const slots: { src?: string; video?: string; label?: string; alt: string }[] = [
     {
-      src: cuttingHairImg,
-      alt: "Baggio cutting a client's hair at Fresh Cutz Barbers, Wealdstone Harrow",
-      span: "sm:col-span-2 sm:row-span-2",
+      video: "/videos/gallery-station.mp4",
+      alt: "The tool station at Fresh Cutz Barbers, Wealdstone Harrow",
     },
     {
       src: afroFrontImg,
       alt: "Finished afro shape-up with sharp lineup at Fresh Cutz Barbers, Wealdstone Harrow",
+    },
+    {
+      video: "/videos/gallery-detail.mp4",
+      alt: "Detail work and line-up at Fresh Cutz Barbers, Wealdstone Harrow",
     },
     {
       src: afroSideImg,
@@ -667,7 +927,7 @@ function ChairShowcase() {
       <div className="mx-auto max-w-6xl px-5">
         <div className="reveal max-w-2xl">
           <p className="eyebrow text-brass">Straight from the chair</p>
-          <h2 className="mt-4 font-display text-4xl font-semibold sm:text-5xl">
+          <h2 className="mt-4 font-display text-5xl font-semibold tracking-tight sm:text-6xl">
             Straight From The Chair.
           </h2>
           <p className="mt-4 text-bone/75">
@@ -676,13 +936,24 @@ function ChairShowcase() {
         </div>
 
         {/* Part A: gallery grid */}
-        <div className="reveal mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3">
+        <div className="reveal mt-12 grid grid-cols-2 gap-4 sm:grid-cols-4">
           {slots.map((s) => (
             <figure
               key={s.alt}
-              className={`relative aspect-[9/16] overflow-hidden rounded-xl border border-border bg-charcoal-2`}
+              className="relative aspect-[9/16] overflow-hidden rounded-xl border border-border bg-charcoal-2"
             >
-              {s.src ? (
+              {s.video ? (
+                <video
+                  className="h-full w-full object-cover"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  aria-label={s.alt}
+                >
+                  <source src={s.video} type="video/mp4" />
+                </video>
+              ) : s.src ? (
                 <img
                   src={s.src}
                   alt={s.alt}
@@ -756,7 +1027,7 @@ function InstagramFeed() {
         <div className="reveal flex flex-wrap items-end justify-between gap-4">
           <div className="max-w-xl">
             <p className="eyebrow text-brass">Recent cuts</p>
-            <h2 className="mt-4 font-display text-4xl font-semibold sm:text-5xl">
+            <h2 className="mt-4 font-display text-5xl font-semibold tracking-tight sm:text-6xl">
               See the latest on Instagram.
             </h2>
             <p className="mt-3 text-bone/75">
@@ -788,7 +1059,7 @@ function Booking() {
       <div className="mx-auto max-w-6xl px-5">
         <div className="reveal max-w-2xl">
           <p className="eyebrow text-brass">Book</p>
-          <h2 className="mt-4 font-display text-4xl font-semibold sm:text-5xl">
+          <h2 className="mt-4 font-display text-5xl font-semibold tracking-tight sm:text-6xl">
             Grab a chair.
           </h2>
           <p className="mt-4 text-bone/75">
@@ -1099,7 +1370,7 @@ function Visit() {
       <div className="mx-auto max-w-6xl px-5">
         <div className="reveal max-w-2xl">
           <p className="eyebrow text-brass">Visit</p>
-          <h2 className="mt-4 font-display text-4xl font-semibold sm:text-5xl">
+          <h2 className="mt-4 font-display text-5xl font-semibold tracking-tight sm:text-6xl">
             Come down to Canning Road.
           </h2>
         </div>

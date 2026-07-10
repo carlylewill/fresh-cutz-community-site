@@ -187,13 +187,21 @@
 @utility reveal {
   opacity: 0;
   transform: translateY(16px);
-  transition: opacity 0.9s ease, transform 0.9s ease;
-}
-@utility reveal-in {
-  opacity: 1;
-  transform: translateY(0);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .reveal { opacity: 1; transform: none; transition: none; }
+  .reveal { opacity: 1; transform: none; }
+}
+
+@utility marquee-track {
+  animation: marquee 26s linear infinite;
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track { animation: none; }
 }
