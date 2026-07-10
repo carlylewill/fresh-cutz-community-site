@@ -47,7 +47,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Barber in Wealdstone, Harrow. Afro, Asian & Caucasian hair specialists. 17+ years cutting the community. Book with Baggio or Rahul.",
+          "Barber in Wealdstone, Harrow. Afro, Asian & Caucasian hair specialists. 10+ years cutting the community. Book with Baggio or Rahul.",
       },
       {
         property: "og:title",
@@ -57,7 +57,7 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "Afro, Asian & Caucasian hair specialists in Wealdstone, Harrow. 17+ years, patient and precise.",
+          "Afro, Asian & Caucasian hair specialists in Wealdstone, Harrow. 10+ years, patient and precise.",
       },
       { property: "og:url", content: "https://freshcutzbarber.co/" },
     ],
@@ -386,7 +386,7 @@ function Hero() {
       </div>
 
       <div className="reveal relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-5 pb-16 pt-28 sm:pt-32">
-        <p className="eyebrow text-brass">Barber in Wealdstone, Harrow · Est. 2009</p>
+        <p className="eyebrow text-brass">Barber in Wealdstone, Harrow · Est. 2015</p>
         <h1 className="mt-5 max-w-3xl font-display text-6xl leading-[0.96] font-semibold tracking-tight sm:text-7xl md:text-8xl lg:text-[8.5rem]">
           Every hair type,
           <br />
@@ -404,7 +404,7 @@ function Hero() {
             <span aria-hidden>★</span>
             {RATING} · {REVIEW_COUNT} Google Reviews
           </span>
-          <span className="text-sm text-bone/75">Trusted by regulars for 20+ years.</span>
+          <span className="text-sm text-bone/75">Trusted by regulars year after year.</span>
         </div>
         <div className="mt-8 flex flex-wrap gap-3">
           <a
@@ -431,7 +431,7 @@ function Hero() {
       <div className="relative z-10 w-full border-t border-bone/15 bg-charcoal/50 backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-8 gap-y-2 px-5 py-4 text-xs text-bone/60">
           <span className="eyebrow">Wealdstone, Harrow</span>
-          <span className="eyebrow hidden sm:inline">17+ years in the community</span>
+          <span className="eyebrow hidden sm:inline">10+ years in the community</span>
           <span className="eyebrow hidden md:inline">All hair types welcome</span>
           <span className="eyebrow hidden lg:inline">Kids' first cuts</span>
           <span className="eyebrow text-brass">Scroll ↓</span>
@@ -490,7 +490,7 @@ function Marquee() {
     "KIDS' FIRST CUTS",
     "HOT TOWEL SHAVES",
     "WALK-INS WELCOME",
-    "EST. 2009",
+    "EST. 2015",
     "WEALDSTONE, HARROW",
   ];
   const renderLine = (key: string) => (
@@ -1533,7 +1533,7 @@ function Footer() {
         </div>
       </div>
       <div className="mx-auto mt-10 max-w-6xl px-5 text-xs text-bone/40">
-        © {new Date().getFullYear()} Fresh Cutz Barbers. Est. 2009.
+        © {new Date().getFullYear()} Fresh Cutz Barbers. Est. 2015.
       </div>
     </footer>
   );
