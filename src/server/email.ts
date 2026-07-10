@@ -11,7 +11,7 @@ function getResend(): Resend {
   return client;
 }
 
-export const FROM_EMAIL = `Fresh Cutz Barbers <booking@${process.env.RESEND_EMAIL_DOMAIN ?? "freshcutzbarber.co"}>`;
+export const FROM_EMAIL = `Fresh Cutz Barbers <info@${process.env.RESEND_EMAIL_DOMAIN ?? "freshcutzbarber.co"}>`;
 export const OWNER_EMAIL = "info@freshcutzbarber.co";
 
 // Never throws — a failed send is logged and swallowed so it can never break

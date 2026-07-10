@@ -562,7 +562,7 @@ function Services() {
         <div className="reveal flex flex-wrap items-end justify-between gap-6">
           <div className="max-w-xl">
             <p className="eyebrow text-brass">Services</p>
-            <h2 className="mt-4 font-display text-4xl font-semibold sm:text-5xl">The menu.</h2>
+            <h2 className="mt-4 font-display text-4xl font-semibold sm:text-5xl">Services & prices.</h2>
             <p className="mt-3 text-bone/75">
               A guide to prices. Final price depends on length, texture and time — Baggio will
               always talk it through before starting. Add what you're after, then book below.
@@ -847,6 +847,53 @@ function Booking() {
 const inputCls =
   "mt-1 block w-full min-h-[44px] rounded-md border border-border bg-background px-3 py-2 text-sm text-bone placeholder:text-bone/40 focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40";
 
+function ServicePicker() {
+  const { items, toggle } = useCart();
+  const [pending, setPending] = useState("");
+  const available = SERVICES.filter((s) => !items.some((i) => i.id === s.id));
+
+  function addPending() {
+    const service = SERVICES.find((s) => s.id === pending);
+    if (!service) return;
+    toggle(service);
+    setPending("");
+  }
+
+  return (
+    <div className="mt-4">
+      <label className="block text-sm text-bone/80" htmlFor="service-picker">
+        Add a service
+      </label>
+      <div className="mt-1 flex flex-col gap-2 sm:flex-row">
+        <select
+          id="service-picker"
+          value={pending}
+          onChange={(e) => setPending(e.target.value)}
+          disabled={available.length === 0}
+          className={`${inputCls} mt-0 sm:flex-1`}
+        >
+          <option value="">
+            {available.length === 0 ? "All services added" : "Choose a service…"}
+          </option>
+          {available.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name} — from £{s.priceFrom}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={addPending}
+          disabled={!pending}
+          className="min-h-[44px] shrink-0 rounded-full bg-brass px-5 py-2 text-sm font-semibold text-charcoal transition-transform hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0"
+        >
+          Add
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function BookingForm() {
   const { items, remove, clear } = useCart();
   const [status, setStatus] = useState<"idle" | "pending" | "sent" | "error">("idle");
@@ -922,11 +969,7 @@ function BookingForm() {
       <h3 className="mt-2 font-display text-2xl font-semibold">Services selected</h3>
       {items.length === 0 ? (
         <p className="mt-4 rounded-md border border-dashed border-border p-4 text-sm text-bone/60">
-          No services added yet.{" "}
-          <a href="#services" className="text-brass hover:underline">
-            Pick from the menu
-          </a>{" "}
-          above.
+          No services added yet — choose one below.
         </p>
       ) : (
         <ul className="mt-4 divide-y divide-border">
@@ -954,6 +997,7 @@ function BookingForm() {
           <span className="font-display text-xl text-brass">from £{total}</span>
         </p>
       )}
+      <ServicePicker />
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
         <label className="block text-sm text-bone/80">
