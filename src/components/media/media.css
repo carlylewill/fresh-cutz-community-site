@@ -1,0 +1,92 @@
+/*
+ * Component CSS for the media layer. Deliberately small: <VideoCard> and
+ * <RevealImage> are plain utilities plus one inline aspect-ratio, so only the
+ * hero backdrop needs hand-written rules — it has a pseudo-element, a stacking
+ * order, and a specificity override, none of which a utility can express.
+ *
+ * Values are carried over verbatim from freshcutz-v2_1.html. Do not "tidy" them.
+ */
+
+/* ---------- hero backdrop ----------
+   <HeroParallax /> renders null and scrubs `.hero-bg img`, so the class is a
+   contract with it, not decoration.
+
+   `.hero-bg` and `.hero-bg::after` are duplicated from the same-named block in
+   sections.css, character for character, so <HeroVideo /> stands up on its own
+   and the two files cannot drift into disagreeing. Identical declarations, so
+   whichever the bundler orders last, the result is the same. If the hero section
+   drops its copy, this one keeps the backdrop intact. */
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+/* The radial mask is what stops a photographic backdrop from competing with the
+   headline sitting on top of it. Sits outside .hero-media-layer's opacity: it is
+   generated after the layer, so it paints over it at full strength. */
+.hero-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 30% 40%, transparent 0%, var(--color-ink) 78%);
+}
+
+/* MOBILE — full-bleed.
+   Verified: cover on a 390x844 viewport shows source x=710..1210, which sits
+   entirely inside the 656..1264 footage column, so the pillarbox bars never
+   reach the screen and nothing is upscaled. This is the strongest use of the
+   clip — it was shot for a phone. Opacity is well above the prototype's .14
+   because here the footage IS the hero, not texture; .hero-bg::after keeps the
+   headline legible over it. */
+.hero-media-layer {
+  position: absolute;
+  inset: 0;
+  opacity: 0.55;
+  filter: grayscale(1) contrast(1.1);
+}
+
+/* DESKTOP — portrait panel beside the headline.
+   Full-bleed is impossible here: cover on 1440x900 would show source x=96..1824
+   and expose the bars. A box at the footage's exact 608/1080 centre-crops to
+   x=656..1264 — precisely the footage, no bars, no upscale (scale 0.69, still
+   downsampling). The prototype's radial mask assumes a backdrop, so it's
+   retargeted below to fade the panel's left edge into the ink instead. */
+@media (min-width: 861px) {
+  .hero-media-layer {
+    inset: auto;
+    top: 50%;
+    right: clamp(20px, 4vw, 48px);
+    transform: translateY(-50%);
+    height: min(72svh, 720px);
+    aspect-ratio: 608 / 1080;
+    opacity: 0.85;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    /* Softens the inner edge into the hero so the panel reads as part of the
+       composition rather than a pasted-on rectangle. */
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 22%);
+    mask-image: linear-gradient(90deg, transparent 0%, #000 22%);
+  }
+
+  /* The radial vignette is there to stop a full-bleed photo competing with the
+     headline. With the media confined to a right-hand panel it would only mute
+     the panel, so it goes. */
+  .hero-bg::after {
+    display: none;
+  }
+}
+
+/* (0,2,0) beats sections.css's `.hero-bg img` (0,1,1) regardless of import
+   order. Without this the poster is tinted twice — 0.14 x 0.14 = 2% — and the
+   hero goes black. */
+.hero-bg .hero-media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 1;
+  filter: none;
+}

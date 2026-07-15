@@ -1,0 +1,272 @@
+@import "tailwindcss" source(none);
+@source "../";
+
+/*
+ * Fresh Cutz v2 design system — ported from freshcutz-v2_1.html.
+ *
+ * Plain @theme, not @theme inline: the tokens must be emitted as real custom
+ * properties on :root so hand-written CSS below (preloader, razor, comb) can
+ * use var(--color-brass) directly.
+ *
+ * Consequence: the next/font variables must be set on <html>, not <body>.
+ * --font-display resolves at :root, so if --font-oswald were only defined on
+ * <body> it would be invalid at :root and every heading would silently fall
+ * back to the initial font.
+ */
+@theme {
+  --color-ink: #14171c;
+  --color-ink-soft: #1b2028;
+  --color-ink-deep: #0e1014;
+  --color-paper: #f2ece1;
+  --color-brass: #c7a83b;
+  --color-brass-bright: #e7ce6e;
+  --color-steel: #9aa0a6;
+  /* Pre-multiplied alpha — treat as an opaque API. border-line/50 will not
+     compose as expected; add a separate token if a variant is needed. */
+  --color-line: rgba(199, 168, 59, 0.22);
+
+  --font-display: var(--font-oswald), sans-serif;
+  --font-ticket: var(--font-bebas), sans-serif;
+  --font-body: var(--font-work-sans), sans-serif;
+  --font-mono: var(--font-plex-mono), monospace;
+
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  --ease-shear: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --animate-marquee: marquee 26s linear infinite;
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+}
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  html {
+    scroll-behavior: auto;
+    /* Preloader locks scroll with overflow:hidden; without this the restore
+       shifts the page by the scrollbar width on desktop. */
+    scrollbar-gutter: stable;
+  }
+  body {
+    background: var(--color-ink);
+    color: var(--color-paper);
+    font-family: var(--font-body);
+    font-weight: 300;
+    line-height: 1.6;
+    /* clip, not hidden: `hidden` on the scroll container can create a nested
+       scroll context that confuses Lenis's height math. */
+    overflow-x: clip;
+    -webkit-font-smoothing: antialiased;
+  }
+  img {
+    display: block;
+    max-width: 100%;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+  button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: inherit;
+  }
+  ::selection {
+    background: var(--color-brass);
+    color: var(--color-ink);
+  }
+}
+
+/* ---------- grain ---------- */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 200;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+}
+
+/*
+ * ---------- loader gating ----------
+ * A blocking script in <head> stamps html[data-loader] before first paint, so
+ * the skip decision (repeat visit / reduced motion) never causes a flash or a
+ * hydration mismatch. The Preloader itself always renders identical markup.
+ */
+html[data-loader="skip"] #loader {
+  display: none;
+}
+html[data-loader="skip"] .hero-line > span {
+  transform: none;
+}
+html[data-loader="play"] .hero-line > span {
+  transform: translateY(110%);
+}
+
+/* Batched reveals get their from-state from CSS: ScrollTrigger.batch has no
+   fromTo, so without this they render at final position and never animate. */
+.reveal[data-batch] {
+  opacity: 0;
+  transform: translateY(44px);
+}
+
+/* ---------- preloader ---------- */
+#loader {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: all;
+}
+.shear {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  /* .5 overlap is deliberate — it kills the sub-pixel seam. */
+  height: 50.5%;
+  background: var(--color-ink-deep);
+}
+.shear-top {
+  top: 0;
+  border-bottom: 1px solid var(--color-line);
+}
+.shear-bot {
+  bottom: 0;
+}
+.loader-ticket {
+  position: relative;
+  z-index: 3;
+  text-align: center;
+}
+.loader-ticket .lt-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.35em;
+  color: var(--color-steel);
+  text-transform: uppercase;
+}
+.loader-ticket .lt-num {
+  font-family: var(--font-ticket);
+  font-size: clamp(90px, 20vw, 180px);
+  line-height: 1;
+  color: var(--color-brass);
+  letter-spacing: 0.04em;
+  margin: 8px 0 4px;
+  /* Without this the digits jitter horizontally while counting. */
+  font-variant-numeric: tabular-nums;
+}
+.loader-ticket .lt-sub {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--color-paper);
+}
+#scissors {
+  position: absolute;
+  z-index: 4;
+  top: 50%;
+  left: 0;
+  transform: translate(-120px, -50%);
+  width: 92px;
+  height: 92px;
+}
+#scissors svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+/* Outer clips, inner scales: scaleX on the gradient itself would stretch the
+   dashes rather than reveal them. */
+.cut-line {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 0;
+  height: 1px;
+  width: 100%;
+  overflow: hidden;
+  opacity: 0.9;
+}
+.cut-line-inner {
+  height: 100%;
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left center;
+  background: repeating-linear-gradient(90deg, var(--color-brass) 0 8px, transparent 8px 16px);
+}
+
+@utility eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--color-brass);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+@utility marquee-track {
+  display: flex;
+  width: max-content;
+  animation: var(--animate-marquee);
+  /* One of the few legitimate permanent will-change cases: animates forever. */
+  will-change: transform;
+}
+
+/* ---------- reduced motion ----------
+   Covers the five cases the prototype missed: razor, hair-card filter,
+   booking panel fadeUp, the infinite scroll-hint drip, and the marquee. */
+@media (prefers-reduced-motion: reduce) {
+  #loader {
+    display: none !important;
+  }
+  .hero-line > span {
+    transform: none !important;
+  }
+  .reveal,
+  .reveal[data-batch] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .hair-card img {
+    filter: none !important;
+    transform: none !important;
+  }
+  .marquee-track {
+    animation: none !important;
+  }
+  .scroll-hint .drip {
+    animation: none !important;
+  }
+  .bpanel.show {
+    animation: none !important;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

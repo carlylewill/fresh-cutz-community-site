@@ -1,0 +1,535 @@
+/*
+ * Component CSS for the v2 sections — the bits Tailwind utilities can't express
+ * naturally: ticket perforations, the eyebrow rule, the .sweep button fill,
+ * -webkit-text-stroke initials, and the greyscale->colour transitions.
+ *
+ * Everything else (layout, type scale, spacing) lives as utilities on the
+ * elements themselves. Values are carried over verbatim from
+ * freshcutz-v2_1.html — do not "tidy" them, the design is calibrated to them.
+ */
+
+/* ---------- section shell ---------- */
+.sec {
+  padding: clamp(80px, 11vw, 150px) clamp(20px, 4vw, 48px);
+  position: relative;
+}
+.wrap {
+  max-width: 1240px;
+  margin: 0 auto;
+}
+
+/* The eyebrow utility (globals.css) supplies type + flex; the rule is the
+   section-specific half. Hero's is longer than the section variant. */
+.sec-eyebrow::before,
+.hero-eyebrow::before {
+  content: "";
+  height: 1px;
+  background: var(--color-brass);
+  flex: none;
+}
+.sec-eyebrow::before {
+  width: 34px;
+}
+.hero-eyebrow::before {
+  width: 44px;
+}
+
+/* ---------- hero ---------- */
+/* globals.css drives the from-state of `.hero-line > span` off html[data-loader],
+   so the overflow clip and inline-block must be defined for it to have anything
+   to slide against. */
+.hero-line {
+  display: block;
+  overflow: hidden;
+}
+/* No permanent will-change here: <SplitHeadline> promotes these for the intro
+   tween and clears the layers on complete, and a standing declaration here would
+   defeat that clear and strand a layer per line for the whole session. */
+.hero-line > span {
+  display: inline-block;
+}
+
+/* `.hero-bg` is deliberately NOT styled here — <HeroVideo /> renders that
+   container and its overlay gradient, and brings its own CSS in
+   components/media/media.css. The prototype's .14-opacity greyscale still is
+   gone with it: that treatment existed to stop a photo competing with the
+   headline, and the full-bleed video has its own gradient for that. */
+
+.scroll-hint .drip {
+  width: 1px;
+  height: 34px;
+  background: linear-gradient(var(--color-brass), transparent);
+  animation: drip 1.8s ease-in-out infinite;
+}
+@keyframes drip {
+  0% {
+    transform: scaleY(0);
+    transform-origin: top;
+  }
+  55% {
+    transform: scaleY(1);
+    transform-origin: top;
+  }
+  56% {
+    transform-origin: bottom;
+  }
+  100% {
+    transform: scaleY(0);
+    transform-origin: bottom;
+  }
+}
+
+/* <RazorDraw /> owns the #razor-wrap markup and the draw timing; the hero owns
+   where it sits. */
+#razor-wrap {
+  position: absolute;
+  right: clamp(-40px, 2vw, 60px);
+  bottom: 8vh;
+  width: clamp(260px, 34vw, 520px);
+  z-index: 1;
+  opacity: 0.9;
+  pointer-events: none;
+}
+#razor-wrap svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.razor-stroke {
+  fill: none;
+  stroke: var(--color-brass);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- buttons ---------- */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  background: var(--color-brass);
+  padding: 20px 34px;
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s var(--ease-shear);
+}
+/* -101% not -100%: at fractional device pixel ratios a flush -100% leaves a
+   1px seam of brass-bright at the left edge. */
+.btn-primary .sweep {
+  position: absolute;
+  inset: 0;
+  background: var(--color-brass-bright);
+  transform: translateX(-101%);
+  transition: transform 0.45s var(--ease-shear);
+}
+.btn-primary:hover .sweep,
+.btn-primary:focus-visible .sweep {
+  transform: translateX(0);
+}
+.btn-primary > span,
+.btn-primary > svg {
+  position: relative;
+  z-index: 1;
+}
+.btn-ghost {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-steel);
+  border: 1px solid var(--color-line);
+  padding: 14px 22px;
+  border-radius: 2px;
+  transition: all 0.25s;
+}
+.btn-ghost:hover {
+  color: var(--color-paper);
+  border-color: var(--color-steel);
+}
+
+/* ---------- marquee ---------- */
+/* Scoped to the bar rather than to the Marquee component's internals, so it
+   holds whatever markup <Marquee /> renders for each item. */
+.marquee .marquee-track span {
+  font-family: var(--font-ticket);
+  font-size: clamp(22px, 3vw, 34px);
+  letter-spacing: 0.12em;
+  color: var(--color-paper);
+  padding: 0 26px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 26px;
+}
+.marquee .marquee-track span::after {
+  content: "✂";
+  color: var(--color-brass);
+  font-size: 0.7em;
+}
+
+/* ---------- hair types ---------- */
+.hair-grid .hair-card .img-clip {
+  overflow: hidden;
+  /* Reserves the box before the image decodes. Without it every ScrollTrigger
+     below this grid is measured against the wrong page height. */
+  aspect-ratio: 4 / 4.6;
+}
+.hair-grid .hair-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(1);
+  transform: scale(1.12);
+  transition: filter 0.8s ease;
+}
+.hair-grid .hair-card.in-view img {
+  filter: grayscale(0);
+}
+
+/* ---------- comb divider ---------- */
+.comb {
+  display: block;
+  width: 100%;
+  height: 26px;
+  color: var(--color-line);
+}
+
+/* ---------- services ---------- */
+/* tools.jpg as texture behind the ticket grid, not as a photograph. The opacity
+   is deliberately below the prototype's .14: that value was tuned for a hero
+   backdrop with one headline over it, and the same value behind an eight-card
+   grid reads as clutter competing with the stubs. The gradient sinks the top and
+   bottom edges into --color-ink-deep so the image has no visible seam. */
+.svc-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0.09;
+}
+.svc-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    var(--color-ink-deep) 0%,
+    transparent 35%,
+    transparent 65%,
+    var(--color-ink-deep) 100%
+  );
+}
+/* Lifts the content off the backdrop's stacking context. */
+#services .wrap {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- services : ticket stubs ---------- */
+.ticket {
+  transition:
+    transform 0.35s var(--ease-shear),
+    border-color 0.35s;
+}
+.ticket:hover {
+  transform: translateY(-6px);
+  border-color: var(--color-brass);
+}
+/* The two punched notches. Filled with ink-deep to match #services' own
+   background, which is what sells them as holes rather than dots. */
+.ticket::before,
+.ticket::after {
+  content: "";
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-ink-deep);
+  border: 1px solid var(--color-line);
+  top: 50%;
+  margin-top: -11px;
+}
+.ticket::before {
+  left: -12px;
+}
+.ticket::after {
+  right: -12px;
+}
+.t-perf {
+  border-top: 1px dashed var(--color-line);
+  margin: 18px 0 14px;
+}
+
+/* ---------- barbers ---------- */
+.b-init {
+  font-family: var(--font-ticket);
+  font-size: 110px;
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--color-brass);
+  position: absolute;
+  right: 18px;
+  top: 6px;
+  opacity: 0.5;
+}
+
+/* ---------- reviews ---------- */
+.rev q {
+  quotes: "“" "”";
+}
+
+/* ---------- booking ----------
+   Consumed by <BookingWizard /> (src/components/booking/), which owns the
+   markup and state. These class names are a contract with that component —
+   renaming one here silently unstyles the wizard. */
+.book-shell {
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  background: var(--color-ink-deep);
+  max-width: 860px;
+  margin: 56px auto 0;
+  overflow: hidden;
+}
+.book-head {
+  display: flex;
+  border-bottom: 1px solid var(--color-line);
+}
+.bstep {
+  flex: 1;
+  padding: 16px 8px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-steel);
+  border-right: 1px solid var(--color-line);
+  position: relative;
+}
+.bstep:last-child {
+  border-right: none;
+}
+.bstep.active {
+  color: var(--color-ink);
+  background: var(--color-brass);
+  font-weight: 500;
+}
+.bstep.done {
+  color: var(--color-brass-bright);
+}
+.book-body {
+  padding: clamp(24px, 4vw, 44px);
+}
+.bpanel {
+  display: none;
+}
+.bpanel.show {
+  display: block;
+  animation: fadeUp 0.5s var(--ease-shear);
+}
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.bpanel h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 22px;
+  letter-spacing: 0.05em;
+  margin-bottom: 20px;
+}
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.chip {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  border: 1px solid var(--color-line);
+  border-radius: 3px;
+  padding: 12px 16px;
+  color: var(--color-paper);
+  transition: all 0.2s;
+}
+.chip:hover {
+  border-color: var(--color-brass);
+}
+.chip.on {
+  background: var(--color-brass);
+  color: var(--color-ink);
+  border-color: var(--color-brass);
+}
+.field {
+  margin-bottom: 18px;
+}
+.field label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-steel);
+  margin-bottom: 8px;
+}
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  background: var(--color-ink-soft);
+  border: 1px solid var(--color-line);
+  border-radius: 3px;
+  color: var(--color-paper);
+  font-family: var(--font-body);
+  font-size: 15px;
+  padding: 14px 16px;
+  outline: none;
+  transition: border-color 0.25s;
+}
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: var(--color-brass);
+}
+.f2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 640px) {
+  .f2 {
+    grid-template-columns: 1fr;
+  }
+}
+.book-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 28px;
+  gap: 14px;
+}
+.book-summary {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-steel);
+  border: 1px dashed var(--color-line);
+  border-radius: 4px;
+  padding: 14px 16px;
+  margin-bottom: 22px;
+  line-height: 1.9;
+}
+.book-summary b {
+  color: var(--color-brass-bright);
+  font-weight: 500;
+}
+/* New — the prototype has no error state. Brass-bright rather than a red:
+   nothing else on the site is red, and one alien hue would read as a bug. */
+.book-error {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--color-brass-bright);
+  border: 1px solid var(--color-brass);
+  border-radius: 3px;
+  padding: 12px 14px;
+  margin-top: 18px;
+}
+.sent {
+  text-align: center;
+  padding: 26px 8px;
+}
+.sent .s-ic {
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-brass);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 22px;
+  color: var(--color-brass-bright);
+  font-size: 30px;
+}
+.sent h3 {
+  margin-bottom: 12px;
+}
+.sent p {
+  color: var(--color-steel);
+  max-width: 460px;
+  margin: 0 auto;
+  font-size: 14.5px;
+}
+.flow-note {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  margin-top: 30px;
+  flex-wrap: wrap;
+}
+.flow-note div {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-steel);
+  padding: 10px 14px;
+  border: 1px solid var(--color-line);
+  position: relative;
+}
+.flow-note div b {
+  display: block;
+  color: var(--color-brass-bright);
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+.flow-note div:not(:last-child)::after {
+  content: "→";
+  position: absolute;
+  right: -9px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-brass);
+  background: var(--color-ink-deep);
+  z-index: 2;
+}
+
+/* ---------- recent cuts ---------- */
+/* Same greyscale->colour device as .hair-card, moved from scroll to hover so
+   the strip reads as part of the same system rather than a new one. */
+.cut-tile img,
+.cut-tile video {
+  filter: grayscale(1);
+  transition: filter 0.6s ease;
+}
+.cut-tile:hover img,
+.cut-tile:hover video,
+.cut-tile:focus-within img,
+.cut-tile:focus-within video {
+  filter: grayscale(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cut-tile img,
+  .cut-tile video {
+    filter: none !important;
+  }
+  .ticket:hover {
+    transform: none !important;
+  }
+}

@@ -1,77 +1,36 @@
-import { useEffect } from "react";
+"use client";
+
+import { useEffect, useLayoutEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import Lenis from "lenis";
 
-gsap.registerPlugin(ScrollTrigger);
+// Client components still execute on the server during SSR, so registering at
+// module scope unguarded would touch `document` in Node.
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+  // Without this the iOS URL bar collapsing on scroll fires a resize -> full
+  // refresh -> a visible hitch mid-scroll on a 100svh hero.
+  ScrollTrigger.config({ ignoreMobileResize: true });
+}
 
+/** useLayoutEffect warns during SSR; useEffect is the correct no-op there. */
+export const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
+/**
+ * One-shot sample. Prefer gsap.matchMedia() inside effects where possible —
+ * this reads once at mount and won't react to the OS setting changing.
+ */
 export function prefersReducedMotion(): boolean {
   if (typeof window === "undefined") return false;
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-/** Smooth scroll for the whole page, synced to GSAP's ticker so ScrollTrigger stays in lockstep. */
-export function useSmoothScroll() {
-  useEffect(() => {
-    if (prefersReducedMotion()) return;
-
-    const lenis = new Lenis({
-      duration: 1.1,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothWheel: true,
-    });
-    lenis.on("scroll", ScrollTrigger.update);
-
-    function raf(time: number) {
-      lenis.raf(time * 1000);
-    }
-    gsap.ticker.add(raf);
-    gsap.ticker.lagSmoothing(0);
-
-    // Route in-page anchor clicks (nav links, "Book Now", etc.) through Lenis
-    // so they animate smoothly instead of jumping instantly.
-    function onClick(e: MouseEvent) {
-      const anchor = (e.target as HTMLElement).closest("a[href^='#']");
-      if (!anchor) return;
-      const href = anchor.getAttribute("href");
-      if (!href || href === "#") return;
-      const target = document.querySelector(href);
-      if (!target) return;
-      e.preventDefault();
-      lenis.scrollTo(target as HTMLElement, { duration: 1.2 });
-    }
-    document.addEventListener("click", onClick);
-
-    return () => {
-      document.removeEventListener("click", onClick);
-      gsap.ticker.remove(raf);
-      lenis.destroy();
-    };
-  }, []);
-}
-
-/** Batches every .reveal element into staggered GSAP ScrollTrigger entrances. */
-export function useScrollReveal() {
-  useEffect(() => {
-    if (prefersReducedMotion()) return;
-
-    const ctx = gsap.context(() => {
-      ScrollTrigger.batch(".reveal", {
-        start: "top 88%",
-        onEnter: (batch) =>
-          gsap.to(batch, {
-            opacity: 1,
-            y: 0,
-            duration: 0.9,
-            ease: "power3.out",
-            stagger: 0.08,
-            overwrite: true,
-          }),
-      });
-    });
-
-    return () => ctx.revert();
-  }, []);
-}
+/** Per-grid staggers, from the prototype (0.06–0.12). */
+export const REVEAL_GRIDS = [
+  { sel: "#svcGrid .ticket", stagger: 0.06 },
+  { sel: ".hair-grid .hair-card", stagger: 0.1 },
+  { sel: ".rev-grid .rev", stagger: 0.1 },
+  { sel: ".barber-grid .barber", stagger: 0.12 },
+] as const;
 
 export { gsap, ScrollTrigger };

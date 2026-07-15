@@ -31,6 +31,24 @@ export type Booking = {
   updated_at: string;
 };
 
+export type NotificationChannel = "email" | "whatsapp";
+
+export type NotificationStatus = "sent" | "failed" | "skipped";
+
+// One row per send attempt, written by notify(). `template` is the name of the
+// email-templates.ts function that produced the message.
+export type BookingNotification = {
+  id: string;
+  booking_id: string;
+  channel: NotificationChannel;
+  template: string;
+  recipient: string;
+  status: NotificationStatus;
+  provider_message_id: string | null;
+  error: string | null;
+  created_at: string;
+};
+
 // Minimal hand-written schema so the untyped Supabase client (no generated
 // codegen in this project) still gets real Insert/Update/Row typing instead
 // of the library's `never` default when no Database generic is supplied.
@@ -41,6 +59,12 @@ export type Database = {
         Row: Booking;
         Insert: Partial<Booking>;
         Update: Partial<Booking>;
+        Relationships: [];
+      };
+      booking_notifications: {
+        Row: BookingNotification;
+        Insert: Partial<BookingNotification>;
+        Update: Partial<BookingNotification>;
         Relationships: [];
       };
     };
