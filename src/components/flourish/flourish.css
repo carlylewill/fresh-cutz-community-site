@@ -18,38 +18,47 @@
 
 /* preserveAspectRatio="none" + a 0-100 viewBox lets one rect stretch to any card
    size, so nothing here needs the card's real dimensions. non-scaling-stroke
-   keeps the line 1.5px whatever that stretch factor turns out to be. */
+   keeps the line 1.5px whatever that stretch factor turns out to be.
+
+   inset must equal RIDE_INSET in ticket-snip.tsx: the cards are overflow:hidden,
+   so the line and the tools both have to sit far enough in that a tool centred
+   on the line isn't sliced in half by the card's own clip. The two numbers are a
+   pair — change one and the blade stops riding its own cut. */
 .tk-edge {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  inset: 17px;
+  width: auto;
+  height: auto;
   overflow: visible;
 }
 
 .tk-cut {
   fill: none;
   stroke: var(--color-brass-bright);
-  stroke-width: 1.5;
-  /* pathLength="100" normalises the perimeter, so 100/100 is exactly one lap
-     regardless of the card's aspect ratio — the dash maths never needs measuring. */
+  /* Dashed, not solid — it is a cut line, and it should read as the same mark
+     the hero's blade leaves. A solid stroke just looks like a hover border. */
+  stroke-width: 2;
+  stroke-linecap: butt;
+  /* Two dashes composed: pathLength="100" normalises the perimeter to 100 units
+     so one lap is exactly 100 regardless of the card's aspect ratio. The dash
+     pattern rides inside that via a second dasharray on the parent .tk-fx. */
   stroke-dasharray: 100 100;
   stroke-dashoffset: 100;
-  filter: drop-shadow(0 0 4px rgba(199, 168, 59, 0.55));
+  filter: drop-shadow(0 0 5px rgba(199, 168, 59, 0.6));
 }
 
 .tk-tool {
   position: absolute;
   top: 0;
   left: 0;
-  width: 24px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
   /* The blades meet at the SVG's centre, so the hotspot must sit there or the
-     tool rides 12px off the edge it is supposed to be cutting. */
-  margin: -12px 0 0 -12px;
+     tool rides 15px off the edge it is supposed to be cutting. */
+  margin: -15px 0 0 -15px;
   opacity: 0;
   overflow: visible;
-  filter: drop-shadow(0 0 5px rgba(199, 168, 59, 0.5));
+  filter: drop-shadow(0 0 6px rgba(199, 168, 59, 0.75));
 }
 
 @media (pointer: coarse), (prefers-reduced-motion: reduce) {

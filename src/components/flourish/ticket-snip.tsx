@@ -26,8 +26,19 @@ import "./flourish.css";
  * the brass glow and nothing else.
  */
 
+/**
+ * Distance from the card's edge that the cut line and the tools both ride, in px.
+ *
+ * Not decorative — load-bearing. `.ticket` and `.barber` are both
+ * `overflow: hidden` (the barber cards need it for their oversized initial), so
+ * anything centred on the true border has half its width clipped away. At the
+ * previous 6px inset a 24px tool showed a 6px sliver, which is why the line
+ * appeared to travel on its own. This must stay >= half the tool's width.
+ */
+const RIDE_INSET = 17;
+
 /** Walk a tool clockwise around the card's inset perimeter. */
-function placeOnPerimeter(el: HTMLElement, card: HTMLElement, t: number, inset = 6) {
+function placeOnPerimeter(el: HTMLElement, card: HTMLElement, t: number, inset = RIDE_INSET) {
   const w = card.clientWidth - inset * 2;
   const h = card.clientHeight - inset * 2;
   const per = 2 * (w + h);
@@ -120,7 +131,15 @@ export function TicketSnip() {
 
     mm.add("(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)", () => {
       const cards = gsap.utils.toArray<HTMLElement>(".ticket");
-      const built = new Map<HTMLElement, { cut: gsap.core.Timeline; mend: gsap.core.Timeline }>();
+      const built = new Map<
+        HTMLElement,
+        {
+          cut: gsap.core.Timeline;
+          mend: gsap.core.Timeline;
+          buzz: gsap.core.Timeline;
+          scissors: HTMLElement;
+        }
+      >();
 
       const build = (card: HTMLElement) => {
         card.insertAdjacentHTML("beforeend", FX);
@@ -135,36 +154,33 @@ export function TicketSnip() {
         // appears under the blades rather than merely near them.
         const p = { t: 0 };
 
-        const cutTl = gsap
-          .timeline({ paused: true })
-          .set([scissors], { opacity: 1 })
-          .set(cut, { strokeDashoffset: 100 })
-          .to(
-            p,
-            {
-              t: 1,
-              duration: 0.85,
-              ease: "power1.inOut",
-              onUpdate: () => {
-                placeOnPerimeter(scissors, card, p.t);
-                gsap.set(cut, { strokeDashoffset: 100 - p.t * 100 });
-              },
-            },
-            0,
-          )
-          // Blades buzz the whole way round rather than snipping once — a single
-          // snip on an 0.85s traverse reads as a glitch.
-          .to(
-            a,
-            { rotate: -15, transformOrigin: "26px 50px", duration: 0.085, yoyo: true, repeat: 9 },
-            0,
-          )
-          .to(
-            b,
-            { rotate: 15, transformOrigin: "26px 50px", duration: 0.085, yoyo: true, repeat: 9 },
-            0,
-          )
-          .to(scissors, { opacity: 0, duration: 0.12 }, 0.78);
+        // Loops for as long as the pointer is on the card: the tool keeps
+        // working rather than doing one lap and abandoning it. `ease: "none"` so
+        // the seam between laps is invisible — any easing would make the blade
+        // decelerate into the corner it started at and give the loop a seam.
+        /*
+         * The lap and the buzz are SEPARATE timelines on purpose. An
+         * infinitely-repeating child gives its parent an infinite duration, so
+         * the parent's own `repeat: -1` can never fire — the lap would run once
+         * and park in the corner while the blades kept chattering. Keep the
+         * repeating timeline's children finite and drive the buzz alongside it.
+         */
+        const buzz = gsap
+          .timeline({ paused: true, repeat: -1, yoyo: true })
+          .to(a, { rotate: -15, transformOrigin: "26px 50px", duration: 0.085 }, 0)
+          .to(b, { rotate: 15, transformOrigin: "26px 50px", duration: 0.085 }, 0);
+
+        // ease: "none" so the seam between laps is invisible — any easing would
+        // decelerate the blade into the corner it is about to leave from.
+        const cutTl = gsap.timeline({ paused: true, repeat: -1 }).to(p, {
+          t: 1,
+          duration: 1.15,
+          ease: "none",
+          onUpdate: () => {
+            placeOnPerimeter(scissors, card, p.t);
+            gsap.set(cut, { strokeDashoffset: 100 - p.t * 100 });
+          },
+        });
 
         const q = { t: 0 };
         const mendTl = gsap
@@ -187,7 +203,7 @@ export function TicketSnip() {
           )
           .to(comb, { opacity: 0, duration: 0.12 }, 0.62);
 
-        const rec = { cut: cutTl, mend: mendTl };
+        const rec = { cut: cutTl, mend: mendTl, buzz, scissors };
         built.set(card, rec);
         return rec;
       };
@@ -196,7 +212,9 @@ export function TicketSnip() {
         const card = e.currentTarget as HTMLElement;
         const rec = built.get(card) ?? build(card);
         rec.mend.pause(0);
+        gsap.set(rec.scissors, { opacity: 1 });
         rec.cut.restart();
+        rec.buzz.play();
       };
 
       const leave = (e: Event) => {
@@ -204,6 +222,8 @@ export function TicketSnip() {
         const rec = built.get(card);
         if (!rec) return;
         rec.cut.pause();
+        rec.buzz.pause();
+        gsap.set(rec.scissors, { opacity: 0 });
         rec.mend.restart();
       };
 
@@ -215,7 +235,10 @@ export function TicketSnip() {
        * icons sharing a path.
        */
       const barbers = gsap.utils.toArray<HTMLElement>(".barber");
-      const barberTl = new Map<HTMLElement, gsap.core.Timeline>();
+      const barberRec = new Map<
+        HTMLElement,
+        { tl: gsap.core.Timeline; buzz: gsap.core.Timeline; tools: HTMLElement[] }
+      >();
 
       const buildBarber = (card: HTMLElement) => {
         const isRazor = card.dataset.tool === "razor";
@@ -230,68 +253,77 @@ export function TicketSnip() {
         const scissors = fx.querySelector<HTMLElement>(".tk-scissors");
 
         const p = { t: 0 };
-        const tl = gsap
-          .timeline({ paused: true })
-          .set(tools, { opacity: 1 })
-          .set(cut, { strokeDashoffset: 100 })
-          .to(
-            p,
-            {
-              t: 1,
-              duration: 0.95,
-              ease: "power1.inOut",
-              onUpdate: () => {
-                if (isRazor) {
-                  placeOnPerimeter(tools[0], card, p.t);
-                } else {
-                  // The comb leads by 4% of the lap; the scissors work behind it.
-                  placeOnPerimeter(comb!, card, p.t + 0.04);
-                  placeOnPerimeter(scissors!, card, p.t);
-                }
-                gsap.set(cut, { strokeDashoffset: 100 - p.t * 100 });
-              },
-            },
-            0,
-          );
 
+        // Same separation as the tickets: the repeating lap holds only finite
+        // children, and the tool's own motion runs as its own repeating timeline.
+        const buzz = gsap.timeline({ paused: true, repeat: -1, yoyo: true });
         if (isRazor) {
-          // A razor is rocked, not opened and shut.
-          tl.to(
-            blade,
-            { rotate: -7, transformOrigin: "50px 50px", duration: 0.16, yoyo: true, repeat: 10 },
-            0,
-          );
+          // A razor is rocked along the edge, not opened and shut like shears.
+          buzz.to(blade, { rotate: -7, transformOrigin: "50px 50px", duration: 0.16 }, 0);
         } else {
-          tl.to(
-            a,
-            { rotate: -15, transformOrigin: "26px 50px", duration: 0.09, yoyo: true, repeat: 9 },
-            0,
-          ).to(
-            b,
-            { rotate: 15, transformOrigin: "26px 50px", duration: 0.09, yoyo: true, repeat: 9 },
-            0,
-          );
+          buzz
+            .to(a, { rotate: -15, transformOrigin: "26px 50px", duration: 0.09 }, 0)
+            .to(b, { rotate: 15, transformOrigin: "26px 50px", duration: 0.09 }, 0);
         }
-        tl.to(tools, { opacity: 0, duration: 0.14 }, 0.86);
 
-        barberTl.set(card, tl);
-        return tl;
+        const tl = gsap.timeline({ paused: true, repeat: -1 }).to(p, {
+          t: 1,
+          duration: 1.25,
+          ease: "none",
+          onUpdate: () => {
+            if (isRazor) {
+              placeOnPerimeter(tools[0], card, p.t);
+            } else {
+              // The comb leads by 4% of the lap; the scissors work behind it —
+              // scissor-over-comb, which is the technique, not two icons sharing
+              // a path.
+              placeOnPerimeter(comb!, card, p.t + 0.04);
+              placeOnPerimeter(scissors!, card, p.t);
+            }
+            gsap.set(cut, { strokeDashoffset: 100 - p.t * 100 });
+          },
+        });
+
+        barberRec.set(card, { tl, buzz, tools });
+        return { tl, buzz, tools };
       };
 
       const barberEnter = (e: Event) => {
         const card = e.currentTarget as HTMLElement;
-        (barberTl.get(card) ?? buildBarber(card)).restart();
+        const rec = barberRec.get(card) ?? buildBarber(card);
+        gsap.set(rec.tools, { opacity: 1 });
+        rec.tl.restart();
+        rec.buzz.play();
+      };
+
+      const barberLeave = (e: Event) => {
+        const card = e.currentTarget as HTMLElement;
+        const rec = barberRec.get(card);
+        if (!rec) return;
+        rec.tl.pause();
+        rec.buzz.pause();
+        gsap.to(rec.tools, { opacity: 0, duration: 0.2 });
+        gsap.to(card.querySelector(".tk-cut"), { strokeDashoffset: 100, duration: 0.35 });
       };
 
       cards.forEach((c) => {
         c.addEventListener("mouseenter", enter);
         c.addEventListener("mouseleave", leave);
       });
-      barbers.forEach((c) => c.addEventListener("mouseenter", barberEnter));
+      barbers.forEach((c) => {
+        c.addEventListener("mouseenter", barberEnter);
+        c.addEventListener("mouseleave", barberLeave);
+      });
 
       return () => {
-        barbers.forEach((c) => c.removeEventListener("mouseenter", barberEnter));
-        barberTl.forEach((t) => t.kill());
+        barbers.forEach((c) => {
+          c.removeEventListener("mouseenter", barberEnter);
+          c.removeEventListener("mouseleave", barberLeave);
+        });
+        barberRec.forEach((r) => {
+          r.tl.kill();
+          r.buzz.kill();
+        });
         cards.forEach((c) => {
           c.removeEventListener("mouseenter", enter);
           c.removeEventListener("mouseleave", leave);
@@ -299,6 +331,7 @@ export function TicketSnip() {
         built.forEach((r) => {
           r.cut.kill();
           r.mend.kill();
+          r.buzz.kill();
         });
         // The markup is ours; leaving it behind would strand transformed nodes
         // if reduced motion is switched on mid-session.

@@ -154,7 +154,15 @@ export function CutTransition({ source = "#top" }: { source?: string }) {
         // hero's bottom on the viewport's bottom") means the two cannot drift:
         // change the range below and this follows it.
         const heroTopDoc = hero!.getBoundingClientRect().top + window.scrollY;
-        panels = createShearPanels(hero!, { axis: "vertical", top: heroTopDoc - self.start });
+        panels = createShearPanels(hero!, {
+          axis: "vertical",
+          top: heroTopDoc - self.start,
+          // <HeroParallax />'s two targets, and the only things in the hero whose
+          // inline transform is a position on a clock rather than a resting
+          // value. Named here because this component is what knows the hero has
+          // a parallax on it; shear.ts can't tell a scrub from a settled tween.
+          settle: ".hero-bg .hero-media, #razor-wrap",
+        });
         overlay!.dataset.cutting = "";
         // GSAP owns the tools' transforms outright. Nothing centres them in CSS
         // on purpose: GSAP parses an existing `translateX(-50%)` into its own

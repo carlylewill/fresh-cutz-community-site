@@ -72,13 +72,14 @@ export type ShearPanels = {
  * tall, so ANY amplitude loud enough to see becomes a zigzag with a huge
  * horizontal swing per tooth. Frequency was the missing variable.
  *
- * So: 25 points at max 3.0% rather than 15 at 4.2%. Two things carry it —
+ * So: 37 points at max 3.0% rather than 15 at 4.2%. Two things carry it —
  *
- *   FREQUENCY. ~37px between points at 1440, ~35px at 390. Small enough that a
+ *   FREQUENCY. ~25px between points at 1440, ~23px at 390. Small enough that a
  *   jag is an edge detail rather than a feature of the layout.
  *
  *   VARIED DEPTH, ON A STRICT ALTERNATION. Every entry crosses the centre line;
- *   the magnitudes are what wander (0.4% to 3.0%, no two neighbours alike).
+ *   the magnitudes are what wander (0.3% to 3.0%, no two neighbours alike), so
+ *   adjacent points swing anywhere from 1.3% to 5.2% apart.
  *
  * That second one is the whole thing, and it is worth being precise about
  * because the obvious reading of "irregular" is wrong. A draft of this tried
@@ -92,9 +93,17 @@ export type ShearPanels = {
  * most cartoonish thing this edge can do.
  *
  * Alternating every point keeps the ribbon straight and lets the depth do the
- * work: the edge flips side every ~37px, and because adjacent swings run from
- * 0.9% to 5.6% apart it is ragged rather than machined. Fine and irregular reads
- * as torn; coarse and irregular reads as broken, whatever the amplitude.
+ * work: the edge flips side every ~25px, ragged rather than machined because no
+ * two neighbouring swings match. Fine and irregular reads as torn; coarse and
+ * irregular reads as broken, whatever the amplitude.
+ *
+ * WHY 37 AND NOT MORE. 49 points at 2.8% was also screenshotted, and at 1440 it
+ * is arguably the prettiest of the lot — a deckle edge. At 390 it collapses: 17px
+ * between points and a ±11px swing average out to a line that is very nearly
+ * straight, which is the original "the edges don't look torn" complaint coming
+ * back on the breakpoint most of this shop's traffic actually uses. 37 is the
+ * highest frequency that still reads as torn at 390, so it is the answer at both.
+ * Judge any future change to this array at 390 FIRST; desktop flatters it.
  *
  * The edge is only ever seen in motion, while the halves travel apart, so it has
  * to be drawn louder than a static edge would be — that part of the 2.4% -> 4.2%
@@ -113,8 +122,9 @@ export type ShearPanels = {
  * the two halves fail to meet.
  */
 const TEAR = [
-  0, 1.6, -0.7, 2.3, -1.1, 0.5, -2.6, 1.2, -0.4, 3.0, -1.5, 0.8, -2.2, 1.9, -0.6, 2.7, -1.3, 0.4,
-  -2.4, 1.5, -0.9, 2.0, -1.7, 0.6, 0,
+  0, 1.2, -0.6, 2.1, -1.4, 0.4, -2.3, 1.0, -0.3, 2.8, -1.1, 0.7, -1.9, 1.6, -0.5, 2.4, -1.2, 0.3,
+  -2.6, 1.3, -0.8, 1.8, -1.5, 0.5, -2.2, 3.0, -0.4, 1.1, -1.8, 2.5, -0.9, 0.6, -2.7, 1.4, -1.0, 0.5,
+  0,
 ];
 
 /**
@@ -218,6 +228,10 @@ function prepareClone(clone: HTMLElement) {
  * nothing else — two grey slabs closing over the page, then the real section
  * snapping in at progress 0. So a caller that can be entered from either edge
  * must state the progress-0 offset rather than let it be read off the clock.
+ *
+ * `settle` — a selector for the caller's SCRUBBED elements, whose inline
+ * transforms are a mid-scroll snapshot rather than a resting value. Same reason
+ * as `top`, one layer in: see settleScrub.
  */
 export function createShearPanels(
   source: HTMLElement,
@@ -225,7 +239,8 @@ export function createShearPanels(
     tone = "ink",
     axis = "horizontal",
     top,
-  }: { tone?: ShearTone; axis?: ShearAxis; top?: number } = {},
+    settle,
+  }: { tone?: ShearTone; axis?: ShearAxis; top?: number; settle?: string } = {},
 ): ShearPanels {
   const live = source.getBoundingClientRect();
   const rect = { left: live.left, width: live.width, height: live.height, top: top ?? live.top };
@@ -250,7 +265,7 @@ export function createShearPanels(
 
     const clone = source.cloneNode(true) as HTMLElement;
     prepareClone(clone);
-    settleScrub(clone);
+    if (settle) settleScrub(clone, settle);
     clone.classList.add("shear-clone");
     // A rect, not `inset: 0`: the section may be part-scrolled at progress 0, and
     // the panel has to reproduce that exact offset or the copy visibly jumps into
@@ -344,30 +359,37 @@ export function createRiser(
 /**
  * The other half of "the copy must match at progress 0" — see createShearPanels.
  *
- * Getting the panel's offset right puts the copy back on screen; it does not
- * make it match. A scrubbed transform is the section's position on ITS OWN
- * trigger's clock, written inline by GSAP, and cloneNode copies it verbatim. The
- * hero has two (<HeroParallax /> scrubs `.hero-bg .hero-media` to yPercent 12 and
- * `#razor-wrap` to -18 across exactly the same scroll the cut spans), so a copy
- * taken on the way back up freezes the backdrop 108px down and the razor 90px up
- * — and holds them there while the halves close over a real hero that is at 0.
- * Measured: clone `translate(0, 108)` against a real hero at `translate(0, 18)`.
+ * Getting the panel's offset right puts the copy back on screen; it does not make
+ * it match. A SCRUBBED transform is the section's position on its own trigger's
+ * clock, written inline by GSAP, and cloneNode copies it verbatim. The hero has
+ * two: <HeroParallax /> scrubs `.hero-bg .hero-media` to yPercent 12 and
+ * `#razor-wrap` to -18, across exactly the scroll the cut spans. So a copy taken
+ * on the way back up freezes the backdrop 108px down and holds it there while the
+ * halves close over a real hero that is at 0. Measured: clone `translate(0, 108)`
+ * against a real hero at `translate(0, 18)`, a 90px jump at the handoff.
  *
- * Clearing them lands the copy on the untransformed rest state, which IS the
- * progress-0 state: both parallax ranges start where the cut's does. It is also
- * what the copy already got for free coming down, where the tween had not moved
- * yet — so this makes the two directions produce the same picture rather than
- * teaching one of them a new trick.
+ * Dropping the inline value falls back to the stylesheet, which is the rest state
+ * and therefore the progress-0 state — both parallax ranges start where the cut's
+ * does. Fall back, rather than force `none`: if a target is positioned by a CSS
+ * transform, GSAP composed its channel on top of that and the stylesheet's own
+ * value is what progress 0 means for it.
  *
- * Inline transforms only. Anything positioned by a stylesheet is untouched, and
- * everything else in a settled hero (the headline's slide, <Magnetic />'s hover)
- * is at rest at 0 anyway, which is exactly where this leaves it.
+ * WHY A SELECTOR AND NOT EVERY INLINE TRANSFORM IN THE COPY, which is what this
+ * did first and is the tempting generalisation: because a scrubbed transform is
+ * the only kind that is WRONG in a clone. Every other inline transform in a
+ * settled section is already the resting value, so a copy that keeps it is
+ * correct and a copy that drops it is not. `.hero-line > span` is the one that
+ * bites — its from-state is CSS (`html[data-loader="play"] .hero-line > span {
+ * transform: translateY(-110%) }`, see split-headline.tsx) and is live for a
+ * first-time visitor's entire session, held off only by the inline transform the
+ * intro tween left behind. Drop that and the copy's headline leaves the screen.
+ * Only the caller knows which of its targets are on a scrub; it has to say.
  */
-function settleScrub(clone: HTMLElement) {
-  clone.querySelectorAll<HTMLElement>("[style]").forEach((el) => {
-    if (el.style.transform) el.style.transform = "";
+function settleScrub(clone: HTMLElement, selector: string) {
+  clone.querySelectorAll<HTMLElement>(selector).forEach((el) => {
+    el.style.transform = "";
     // Cloned from a live tween's target; the copy tweens nothing.
-    if (el.style.willChange) el.style.willChange = "";
+    el.style.willChange = "";
   });
 }
 
