@@ -1,0 +1,24 @@
+/*
+ * Nav backdrop at the top of the page (before the scrolled state kicks in).
+ *
+ * Solid on mobile: the desktop treatment is a gradient that fades to transparent
+ * at its lower edge — glassy and fine on a wide screen, but on a phone the page
+ * content scrolls visibly through it, which reads as "the website is showing
+ * above/through the header". A phone gets an opaque bar instead.
+ *
+ * safe-area-inset-top keeps the logo and CTA clear of the notch / status bar on
+ * a fixed top: 0 element.
+ */
+.nav-bar {
+  padding-top: max(18px, env(safe-area-inset-top));
+}
+
+.nav-top {
+  background: var(--color-ink-deep);
+}
+
+@media (min-width: 768px) {
+  .nav-top {
+    background: linear-gradient(rgba(14, 16, 20, 0.85), rgba(14, 16, 20, 0));
+  }
+}

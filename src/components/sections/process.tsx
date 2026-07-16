@@ -27,6 +27,7 @@ const BEATS = [
     copy: "Length, texture, what's not working right now — Baggio or Rahul talks it through before a single cut, not after.",
     media: MEDIA.processArrive,
     still: MEDIA.processArriveStill,
+    mobile: MEDIA.processArriveMobile,
     alt: "A client arriving at Fresh Cutz Barbers in Wealdstone, Harrow",
   },
   {
@@ -36,6 +37,7 @@ const BEATS = [
     copy: "Skin fades, tapers, scissor work — afro, Asian or Caucasian hair, cut with the pattern it actually grows in.",
     media: MEDIA.processCut,
     still: MEDIA.processCutStill,
+    mobile: MEDIA.processCutMobile,
     alt: "A barber running clippers along a client's hairline at Fresh Cutz Barbers",
   },
   {
@@ -45,6 +47,7 @@ const BEATS = [
     copy: "Lineups, edge-ups, a hot towel finish. The difference between a haircut and a good haircut.",
     media: MEDIA.processDetail,
     still: MEDIA.processDetailStill,
+    mobile: MEDIA.processDetailMobile,
     alt: "Close detail work on a fresh cut at Fresh Cutz Barbers",
   },
   {
@@ -54,6 +57,7 @@ const BEATS = [
     copy: "No rush, no small talk you didn't ask for. Unhurried the whole way through.",
     media: MEDIA.processFinish,
     still: MEDIA.processFinishStill,
+    mobile: MEDIA.processFinishMobile,
     alt: "A barber finishing a client's cut at Fresh Cutz Barbers",
   },
 ];
@@ -141,6 +145,7 @@ export function Process() {
   const stage = useRef<HTMLDivElement>(null);
   const railFill = useRef<HTMLDivElement>(null);
   const videos = useRef<(HTMLVideoElement | null)[]>([]);
+  const mobileVideos = useRef<(HTMLVideoElement | null)[]>([]);
 
   /**
    * Whether to put <video> elements in the DOM at all. This is a fetch decision,
@@ -158,6 +163,65 @@ export function Process() {
     q.addEventListener("change", sync);
     return () => q.removeEventListener("change", sync);
   }, []);
+
+  /**
+   * The STACKED path's video playback. Mirrors the desktop byte budget on a
+   * phone: each beat renders a <video preload="none"> with no src, sitting over
+   * its poster still, and this effect is the only thing that ever gives it a src
+   * or presses play — so a beat that never scrolls near the viewport fetches zero
+   * video bytes, and Process costs a phone one clip at a time rather than ~4MB of
+   * eager decoders.
+   *
+   * Only runs on the stacked path (`!playable`), and only when motion is allowed:
+   * a reduced-motion visitor is `!playable` too, and they must keep the still and
+   * fetch nothing — so we bail before setting any src, leaving the empty <video>
+   * inert over its poster. Keeping the <video> in the markup either way is what
+   * lets the render stay a pure function of `playable` (no per-visitor branch to
+   * mismatch on hydration); this effect, not the markup, is where the video comes
+   * alive.
+   *
+   * `rootMargin: 600px` warms the beat one screenful early and plays at most the
+   * in-view beat plus its neighbour, never all four — one or two decoders, which
+   * is the whole point of not eager-loading. IntersectionObserver rather than a
+   * scroll listener so the browser does the intersection maths off the main
+   * thread.
+   */
+  useEffect(() => {
+    if (playable) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const els = mobileVideos.current.filter((v): v is HTMLVideoElement => v != null);
+    if (!els.length) return;
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const v = entry.target as HTMLVideoElement;
+          if (entry.isIntersecting) {
+            // First time near view: give it its src and warm it. `preload="none"`
+            // plus no initial src means nothing was fetched until exactly here.
+            if (!v.getAttribute("src") && v.dataset.src) {
+              v.src = v.dataset.src;
+              v.load();
+            }
+            void v.play().catch(() => {});
+          } else {
+            // Scrolled away: pause so no off-screen decoder keeps running. The
+            // already-fetched bytes stay buffered, so scrolling back is instant.
+            v.pause();
+          }
+        }
+      },
+      { rootMargin: "600px 0px" },
+    );
+
+    els.forEach((v) => io.observe(v));
+    return () => {
+      io.disconnect();
+      // A <video> left playing behind a switched-away path decodes forever.
+      els.forEach((v) => v.pause());
+    };
+  }, [playable]);
 
   useIsoLayoutEffect(() => {
     const mm = gsap.matchMedia(section);
@@ -391,7 +455,7 @@ export function Process() {
           aria-hidden
         />
 
-        <div className="relative z-10 mx-auto flex h-full max-w-[1240px] flex-col justify-center px-[clamp(20px,4vw,48px)] py-24 motion-safe:md:justify-end motion-safe:md:pt-0 motion-safe:md:pb-24">
+        <div className="relative z-10 mx-auto flex h-full max-w-[1240px] flex-col justify-center px-[clamp(20px,4vw,48px)] py-14 motion-safe:md:justify-end motion-safe:md:pt-0 motion-safe:md:pb-24">
           <div className="eyebrow sec-eyebrow">The Chair, Start to Finish</div>
 
           {/*
@@ -401,16 +465,25 @@ export function Process() {
            * state, so it needs no JS to be correct.
            */}
           <div className="mt-6 space-y-16 motion-safe:md:relative motion-safe:md:mt-4 motion-safe:md:h-[260px] motion-safe:md:space-y-0">
-            {BEATS.map((b) => (
+            {BEATS.map((b, i) => (
               <div
                 key={b.step}
                 className="p-beat motion-safe:md:absolute motion-safe:md:inset-x-0 motion-safe:md:top-0 motion-safe:md:max-w-2xl"
               >
                 {/*
-                 * The stacked path's still. `aspect-[9/16]` reserves the box
-                 * before a byte arrives, so it cannot reflow the triggers below.
-                 * Only in the DOM when the videos are not, so desktop never
-                 * fetches it and a phone never fetches a clip.
+                 * The stacked path's clip. `aspect-[9/16]` reserves the box before
+                 * a byte arrives, so nothing here reflows the beats below it as the
+                 * poster or the video decodes. Only in the DOM when the landscape
+                 * clips are not, so desktop never fetches these and the two media
+                 * sets are never both in the document.
+                 *
+                 * The poster still sits UNDERNEATH the video (same pattern as the
+                 * desktop path): a <video preload="none"> with no src has no frame
+                 * to show and paints transparent, so the still is what fills the box
+                 * until the clip decodes — the box is never blank. The <video> is
+                 * always here in the markup but inert (no src) until the
+                 * IntersectionObserver above warms it; a reduced-motion visitor
+                 * keeps the still and it stays empty.
                  */}
                 {!playable ? (
                   // Centred, and larger on the stacked path — it was left-aligned
@@ -423,6 +496,30 @@ export function Process() {
                       height={b.still.height}
                       sizes={SIZES.processPanel}
                       className="absolute inset-0 h-full w-full object-cover"
+                    />
+                    <video
+                      ref={(el) => {
+                        mobileVideos.current[i] = el;
+                        // Set imperatively rather than as JSX props: keeps them off
+                        // the typed intrinsic element (x-webkit-airplay is not a
+                        // standard attribute) while still reaching the DOM. Both
+                        // suppress the iOS AirPlay control on an inline decorative
+                        // loop that should never route to a TV.
+                        if (el) {
+                          el.disableRemotePlayback = true;
+                          el.setAttribute("x-webkit-airplay", "deny");
+                        }
+                      }}
+                      className="absolute inset-0 h-full w-full object-cover"
+                      // muted + playsInline is what lets iOS autoplay inline at all;
+                      // loop so a 2-5s beat keeps running. No src and preload="none"
+                      // so nothing loads until the observer sets data-src.
+                      muted
+                      playsInline
+                      loop
+                      preload="none"
+                      data-src={b.mobile.src}
+                      aria-hidden
                     />
                   </div>
                 ) : null}

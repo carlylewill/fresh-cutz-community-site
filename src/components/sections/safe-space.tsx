@@ -15,7 +15,7 @@ import { MEDIA, SIZES } from "@/lib/media";
  */
 export function SafeSpace() {
   return (
-    <section className="bg-ink relative px-[clamp(20px,4vw,48px)] py-[clamp(120px,17vw,220px)]">
+    <section className="bg-ink relative px-[clamp(20px,4vw,48px)] py-[clamp(72px,17vw,220px)]">
       <div className="mx-auto max-w-[1000px] text-center">
         <div className="eyebrow reveal justify-center" data-anim="fade">
           A Safe Space

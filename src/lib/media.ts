@@ -224,6 +224,54 @@ export const MEDIA = {
     height: 1138,
     ratio: 640 / 1138,
   },
+
+  /**
+   * PROCESS BEATS — the mobile portrait videos, one per beat. The phone plays
+   * the sharp 9:16 ORIGINAL, never the blur-filled 1920x1080 landscape the
+   * desktop pins: a phone is portrait, so it shows this footage at its true shape
+   * with no wings, no blur and no upscale. `poster` is the matching still above —
+   * the same frame — so the `aspect-[9/16]` box is never a blank rectangle before
+   * the clip decodes. Fetched lazily, one in-view beat at a time via an
+   * IntersectionObserver (see process.tsx), never all four upfront, so Process
+   * costs a phone one clip's bytes rather than ~4MB. `contentRatio` equals
+   * `ratio`: these are full-frame portrait, not pillarboxed.
+   */
+  processArriveMobile: {
+    src: "/videos/hero-walkin.mp4",
+    width: 720,
+    height: 1280,
+    ratio: 720 / 1280,
+    duration: 5.04,
+    poster: "/videos/hero-walkin-poster.jpg",
+    contentRatio: 720 / 1280,
+  },
+  processCutMobile: {
+    src: "/videos/process-cut.mp4",
+    width: 720,
+    height: 1280,
+    ratio: 720 / 1280,
+    duration: 14.07,
+    poster: "/videos/process-cut-poster.jpg",
+    contentRatio: 720 / 1280,
+  },
+  processDetailMobile: {
+    src: "/videos/gallery-detail.mp4",
+    width: 640,
+    height: 1138,
+    ratio: 640 / 1138,
+    duration: 4.23,
+    poster: "/videos/gallery-detail-poster.jpg",
+    contentRatio: 640 / 1138,
+  },
+  processFinishMobile: {
+    src: "/videos/gallery-finish.mp4",
+    width: 640,
+    height: 1138,
+    ratio: 640 / 1138,
+    duration: 2.24,
+    poster: "/videos/gallery-finish-poster.jpg",
+    contentRatio: 640 / 1138,
+  },
   tools: {
     src: "/media/tools.jpg",
     width: 1376,

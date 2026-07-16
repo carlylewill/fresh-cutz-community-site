@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useLoaderDone } from "@/components/motion/loader-gate";
+import "./nav.css";
 
 const LINKS: [string, string][] = [
   ["#hair", "Hair Types"],
@@ -34,14 +35,9 @@ export function Nav() {
      * the preloader can't desync it.
      */
     <nav
-      className={`ease-shear fixed inset-x-0 top-0 z-60 flex items-center justify-between px-[clamp(20px,4vw,48px)] py-[18px] transition-[background,transform,border-color] duration-400 ${
-        scrolled ? "border-line bg-ink-deep/92 border-b" : "border-b border-transparent"
+      className={`nav-bar ease-shear fixed inset-x-0 top-0 z-60 flex items-center justify-between px-[clamp(20px,4vw,48px)] pb-[18px] transition-[background,transform,border-color] duration-400 ${
+        scrolled ? "border-line bg-ink-deep/92 border-b" : "nav-top border-b border-transparent"
       } ${loaderDone ? "translate-y-0" : "-translate-y-full"}`}
-      style={
-        scrolled
-          ? undefined
-          : { background: "linear-gradient(rgba(14,16,20,.85), rgba(14,16,20,0))" }
-      }
     >
       <a className="flex min-h-[44px] items-center gap-3" href="#top">
         <Image

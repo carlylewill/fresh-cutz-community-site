@@ -381,21 +381,31 @@ export function TicketSnip() {
           .set(tool, { opacity: 1 })
           .to(p, {
             t: 1,
-            duration: 1.5,
+            // Slower than the first pass (1.5s) — it read as a flick. A calm
+            // 2.6s lap lets you watch the tool work the edge.
+            duration: 2.6,
             ease: "power1.inOut",
             onUpdate: () => {
               placeOnPerimeter(tool, card, p.t);
               gsap.set(cut, { strokeDashoffset: 100 - p.t * 100 });
             },
           })
-          .to(tool, { opacity: 0, duration: 0.25 }, ">-0.1");
+          .to(tool, { opacity: 0, duration: 0.3 }, ">-0.1");
 
+        const replay = () => {
+          tl.pause(0);
+          gsap.set(cut, { strokeDashoffset: 100 });
+          tl.play(0);
+        };
         triggers.push(
           ScrollTrigger.create({
             trigger: card,
             start: "top 82%",
-            once: true,
-            onEnter: () => tl.play(),
+            // Not `once` — it should run every time the card enters view, whether
+            // you scroll down INTO it or scroll back up into it. onEnterBack
+            // fires when re-entering from below.
+            onEnter: replay,
+            onEnterBack: replay,
           }),
         );
       });

@@ -10,7 +10,10 @@
 
 /* ---------- section shell ---------- */
 .sec {
-  padding: clamp(80px, 11vw, 150px) clamp(20px, 4vw, 48px);
+  /* Vertical min lowered 80 -> 52: two adjacent sections each contributed 80px,
+     so the gap between them was ~160px on a phone, which read as dead space.
+     Desktop is unchanged — 11vw overtakes the min well before the min matters. */
+  padding: clamp(52px, 11vw, 150px) clamp(20px, 4vw, 48px);
   position: relative;
 }
 .wrap {
