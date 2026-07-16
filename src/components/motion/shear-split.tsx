@@ -55,7 +55,16 @@ export function ShearSplit({
 
       const trigger = ScrollTrigger.create({
         trigger: section,
-        // Same bracket as <CutTransition /> — see there for the derivation.
+        // The bracket is the section's exit and nothing more: `bottom bottom` is
+        // the last moment it fills the screen alone, `bottom top` the first
+        // moment it is gone, and the shear fires between them.
+        //
+        // Deliberately NOT <CutTransition />'s `top top+=1`, which these two used
+        // to share. That range exists to be scrubbed, so it wants every pixel of
+        // the hero's scroll; this one has no scrub — it only has to bracket the
+        // freeze — and starting it at the section's top would hold a still of
+        // #recent-cuts over the live page for the section's entire height to no
+        // purpose. Same shape, different jobs.
         start: "bottom bottom-=1",
         end: "bottom top",
         onEnter: () => {

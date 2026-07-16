@@ -1,0 +1,59 @@
+/*
+ * Hover flourish for the service tickets — scissors cut round the edge, the comb
+ * mends it on the way out. Injected by ticket-snip.tsx on first hover, so these
+ * rules only ever match on a desktop pointer.
+ *
+ * .ticket is already `position: relative` (its perforation notches depend on it),
+ * so the overlay positions against it without touching sections.css.
+ */
+
+.tk-fx {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* Above the ticket's own content, below the nav and the scissor cursor. */
+  z-index: 2;
+  color: var(--color-brass-bright);
+}
+
+/* preserveAspectRatio="none" + a 0-100 viewBox lets one rect stretch to any card
+   size, so nothing here needs the card's real dimensions. non-scaling-stroke
+   keeps the line 1.5px whatever that stretch factor turns out to be. */
+.tk-edge {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.tk-cut {
+  fill: none;
+  stroke: var(--color-brass-bright);
+  stroke-width: 1.5;
+  /* pathLength="100" normalises the perimeter, so 100/100 is exactly one lap
+     regardless of the card's aspect ratio — the dash maths never needs measuring. */
+  stroke-dasharray: 100 100;
+  stroke-dashoffset: 100;
+  filter: drop-shadow(0 0 4px rgba(199, 168, 59, 0.55));
+}
+
+.tk-tool {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 24px;
+  height: 24px;
+  /* The blades meet at the SVG's centre, so the hotspot must sit there or the
+     tool rides 12px off the edge it is supposed to be cutting. */
+  margin: -12px 0 0 -12px;
+  opacity: 0;
+  overflow: visible;
+  filter: drop-shadow(0 0 5px rgba(199, 168, 59, 0.5));
+}
+
+@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .tk-fx {
+    display: none !important;
+  }
+}

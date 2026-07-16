@@ -1,4 +1,11 @@
 User-agent: *
 Allow: /
 
+# The token in these URLs is the only thing authorising an approve/decline —
+# there is no login. An indexed token is a public token, so they must never be
+# crawled. The pages also send X-Robots-Tag: noindex themselves (next.config.ts);
+# this is the belt to those braces.
+Disallow: /booking/
+Disallow: /api/
+
 Sitemap: https://freshcutzbarber.co/sitemap.xml

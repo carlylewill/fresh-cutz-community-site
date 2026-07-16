@@ -50,10 +50,11 @@ export const MEDIA = {
    * Hero backdrop: the cutting loop, full-bleed behind the headline. Genuine
    * full-frame landscape — no bars — so it covers a hero at any width.
    *
-   * True 1080p, so a 1440px hero downscales it — no upscale ceiling. Re-encoded
-   * with a keyframe every 0.5s because Process seeks this clip's currentTime
-   * from scroll rather than playing it, and seeking between sparse keyframes is
-   * what makes a scrub stutter. Nothing should magnify it further — no
+   * True 1080p, so a 1440px hero downscales it — no upscale ceiling. Normal GOP:
+   * an earlier encode forced a keyframe every 0.5s so Process could seek this
+   * clip, which cost 1.4MB (3.7 -> 2.3) on the hero's LCP-adjacent asset.
+   * Process now plays four separate clips and never touches this one, so that
+   * capability was pure overhead. Nothing should magnify it further — no
    * zoom on hover. The longest clip, hence the only one worth a poster.
    */
   heroLoop: {
@@ -63,9 +64,9 @@ export const MEDIA = {
     ratio: 1920 / 1080,
     duration: 14.04,
     poster: "/media/hero-poster.jpg",
-    // No pillarbox: this is a true full-frame 1080p export, so the footage
-    // shape and the file shape are the same. Re-encoded with a keyframe every
-    // 0.5s because Process seeks this clip rather than playing it.
+    // No pillarbox: this is a true full-frame 1080p export, so the footage shape
+    // and the file shape are the same. (hero-1/hero-3 were not, which is why
+    // contentRatio exists at all — check cropdetect, never the container dims.)
     contentRatio: 1920 / 1080,
   },
   /** Extracted from heroLoop, so it matches it frame for frame. */
@@ -126,6 +127,103 @@ export const MEDIA = {
     duration: 4.23,
     contentRatio: 720 / 1280,
   },
+  /**
+   * PROCESS BEATS — one clip per step, four distinct scenes (verified pairwise:
+   * closest pair 44.5 mean luma diff, against the 0.61 that exposed the old
+   * process-cut/process-detail duplicate).
+   *
+   * These are BLUR-FILLED to 1920x1080: the sharp 9:16 original sits centred and
+   * a blurred, darkened copy of it fills the wings. That is a real compromise and
+   * it is only payable here — Process lays a heavy gradient over the whole frame,
+   * so the wings read as depth of field rather than as a fix. The hero has no
+   * such gradient and must never use these.
+   *
+   * PLAYED, NEVER SEEKED. Each file has 1-2 keyframes in total (proc-2-cut: 2
+   * across 422 frames), so any seek decodes from frame 0. `duration` is here to
+   * document the clip, not to scrub it.
+   *
+   * `contentRatio` is the FILE ratio, deliberately: unlike the pillarboxed
+   * hero-1/hero-3, the wings here are real picture rather than black bars, so a
+   * cover box wants the whole 16:9 frame.
+   */
+  /** Beat 1, Consultation. The walk-in — shopfront sign, client at the door. */
+  processArrive: {
+    src: "/media/proc-1-consult.mp4",
+    width: 1920,
+    height: 1080,
+    ratio: 1920 / 1080,
+    duration: 5.04,
+    poster: "/media/proc-1-consult-poster.jpg",
+    contentRatio: 1920 / 1080,
+  },
+  /** Beat 2, The Cut. Clippers on the front hairline. */
+  processCut: {
+    src: "/media/proc-2-cut.mp4",
+    width: 1920,
+    height: 1080,
+    ratio: 1920 / 1080,
+    duration: 14.07,
+    poster: "/media/proc-2-cut-poster.jpg",
+    contentRatio: 1920 / 1080,
+  },
+  /**
+   * Beat 3, The Detail. Derived from gallery-detail, NOT from the deleted
+   * process-detail.mp4 — that file was the same footage as process-cut (mean
+   * luma diff 0.61/255 at five timestamps, identical 422 frames), which is what
+   * made the old section show one clip for two beats. Same scene as stripClip2
+   * (Recent Cuts card 4); reusing it is the known cost of a five-scene library.
+   */
+  processDetail: {
+    src: "/media/proc-3-detail.mp4",
+    width: 1920,
+    height: 1080,
+    ratio: 1920 / 1080,
+    duration: 4.23,
+    poster: "/media/proc-3-detail-poster.jpg",
+    contentRatio: 1920 / 1080,
+  },
+  /** Beat 4, Out the Chair. The spray-down finish. Same scene as cutsLoop. */
+  processFinish: {
+    src: "/media/proc-4-finish.mp4",
+    width: 1920,
+    height: 1080,
+    ratio: 1920 / 1080,
+    duration: 2.24,
+    poster: "/media/proc-4-finish-poster.jpg",
+    contentRatio: 1920 / 1080,
+  },
+
+  /**
+   * The stacked path's stills — one per beat, and deliberately the SHARP 9:16
+   * originals rather than a frame of the blur-filled clips above. A phone is
+   * portrait: it can show this footage at its true shape, so it gets no wings,
+   * no blur, and no upscale. The blur-fill exists to solve a landscape problem
+   * that does not exist on a 390px screen.
+   */
+  processArriveStill: {
+    src: "/videos/hero-walkin-poster.jpg",
+    width: 720,
+    height: 1280,
+    ratio: 720 / 1280,
+  },
+  processCutStill: {
+    src: "/videos/process-cut-poster.jpg",
+    width: 720,
+    height: 1280,
+    ratio: 720 / 1280,
+  },
+  processDetailStill: {
+    src: "/videos/gallery-detail-poster.jpg",
+    width: 640,
+    height: 1138,
+    ratio: 640 / 1138,
+  },
+  processFinishStill: {
+    src: "/videos/gallery-finish-poster.jpg",
+    width: 640,
+    height: 1138,
+    ratio: 640 / 1138,
+  },
   tools: {
     src: "/media/tools.jpg",
     width: 1376,
@@ -160,6 +258,14 @@ export const MEDIA = {
 export const SIZES = {
   /** Full-bleed backdrop. */
   fullBleed: "100vw",
+  /**
+   * The Process step panel. Portrait-native and height-driven: the box is
+   * `aspect-[9/16]` off a height clamp, so its width tops out at
+   * 540 * 9/16 ≈ 304px on desktop and is capped at 220px on the stacked path.
+   * Rounded up to the next sensible bucket, which still lands under the 720px
+   * source at 2x — no upscale at any breakpoint.
+   */
+  processPanel: "(max-width: 767px) 220px, 320px",
   /** Full width of `.wrap`: max-width 1240, gutter clamp(20px,4vw,48px) a side. */
   wrapFull: "(max-width: 1336px) calc(100vw - 96px), 1240px",
   /** The 1.2fr column of Visit's `[1.2fr_1fr]` grid, gap-11 (44px), inside `.wrap`. */

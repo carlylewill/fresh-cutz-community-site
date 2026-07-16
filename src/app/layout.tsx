@@ -4,6 +4,8 @@ import { GoogleAnalytics } from "@next/third-parties/google";
 import { fontVariables } from "@/lib/fonts";
 import { SmoothScrollProvider } from "@/components/motion/smooth-scroll-provider";
 import { LoaderGate } from "@/components/motion/loader-gate";
+import { ScissorCursor } from "@/components/cursor/scissor-cursor";
+import { TicketSnip } from "@/components/flourish/ticket-snip";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -12,7 +14,19 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "Fresh Cutz Barbers",
-    images: [{ url: "/og-image.jpg", width: 1200, height: 630 }],
+    locale: "en_GB",
+    // metadataBase resolves this to an absolute URL — Facebook and WhatsApp's
+    // scrapers reject relative ones outright, which is the classic reason a
+    // shared link renders with no image at all.
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        type: "image/jpeg",
+        alt: "Fresh Cutz Barbers — every hair type, one chair, cut with care. Wealdstone, Harrow. 4.8 from 106 Google reviews.",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
@@ -63,6 +77,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: LOADER_GATE }} />
       </head>
       <body>
+        <ScissorCursor />
+        <TicketSnip />
         <SmoothScrollProvider>
           <LoaderGate>{children}</LoaderGate>
         </SmoothScrollProvider>

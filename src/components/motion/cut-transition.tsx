@@ -66,13 +66,31 @@ const RISE = 15;
  *   here      : clipper/comb, blade VIBRATING, cut DOWN, halves left/right,
  *               TORN edge, scroll-driven, reversible.
  *
- * SCROLL RANGE — `start: "bottom bottom-=1"`, `end: "bottom top"`. Derived, not
- * tuned. The cut must complete in exactly the scroll the hero would have taken
- * to leave: `bottom bottom` is the last moment the hero fills the screen alone,
- * `bottom top` the first moment it is entirely gone. It adds no scroll and hides
- * none, it can't finish early into dead scroll, and it can't still be cutting
- * once the next section is up. The `-=1` keeps it off scroll 0, where a trigger
- * already past its start would freeze a copy over the intro.
+ * SCROLL RANGE — `start: "top top-=1"`, `end: "bottom top"`. Derived, not tuned:
+ * it is every pixel of scroll the hero owns, from the first one to the one that
+ * carries it off. `bottom top` is the first moment the hero is entirely gone, so
+ * the cut cannot still be running once the next section is up; `top top` is the
+ * earliest a scroll-driven anything can begin. It adds no scroll and hides none.
+ * The `-=1` keeps it off scroll 0, where a trigger already past its start would
+ * freeze a copy over the intro.
+ *
+ * HOW LONG THE CUT TAKES IS THE HERO'S HEIGHT, and there is no other lever here.
+ * The complaint that the cut fires too fast is real, but it was never the range:
+ * the range is already this trigger's whole budget, and `end` cannot move later
+ * without the cut outliving the hero. Measured at both breakpoints: the hero is
+ * `min-h-[100svh]` and its content fits inside that, so offsetHeight is exactly
+ * innerHeight — 900 at 1440x900, 844 at 390x844 — and progress tracks scrollY/900
+ * and scrollY/844 from scroll 1 to the hero's last pixel. One viewport of scroll,
+ * because the hero is one viewport tall.
+ *
+ * Which is why `top top+=1` rather than the `bottom bottom-=1` this used to say.
+ * The two are the same trigger today (a hero exactly one viewport tall reaches
+ * `bottom bottom` at scroll 0), but `bottom bottom` caps the cut at the LAST
+ * viewport of the hero's scroll however tall the hero is, and `top top` spends
+ * all of it. Give the hero height — a shorter phone, longer copy, a bigger
+ * accessibility font, or a deliberate `min-h-[170svh]` in hero.tsx with the copy
+ * held in a 100svh box — and the cut lengthens to match, with nothing here to
+ * retune. That is the only way to make it slower.
  */
 export function CutTransition({ source = "#top" }: { source?: string }) {
   const root = useRef<HTMLDivElement>(null);
@@ -116,13 +134,27 @@ export function CutTransition({ source = "#top" }: { source?: string }) {
       // viewport's height, and ScrollTrigger already recomputes on resize.
       let travel = window.innerHeight;
 
-      function open() {
+      function open(self: ScrollTrigger) {
         if (panels) return;
-        // Built here, not at mount: the copy must be of what is on screen at
-        // this instant. Rebuilt on re-entry from either side, so the effect is
-        // as reversible as the scrub that drives it.
+        // Built here, not at mount: the copy must be of the hero as it stands at
+        // progress 0. Rebuilt on re-entry from either side, so the effect is as
+        // reversible as the scrub that drives it.
         riser = createRiser(hero!, { tone: "ink" });
-        panels = createShearPanels(hero!, { axis: "vertical" });
+        // THE OFFSET IS DERIVED FROM THE TRIGGER, not from the clock.
+        //
+        // `open` runs at `start` coming down and at `end` going up, so
+        // getBoundingClientRect() answers two different questions depending on
+        // which way the user arrived — and going up it answers the wrong one, by
+        // a viewport. `self.start` is the scroll position where progress is 0,
+        // so this is the hero's top relative to the viewport at that scroll,
+        // which is the only state the panels are ever seen closed in. Same
+        // number in both directions, by construction.
+        //
+        // Reading the trigger rather than re-deriving `start`'s rule ("the
+        // hero's bottom on the viewport's bottom") means the two cannot drift:
+        // change the range below and this follows it.
+        const heroTopDoc = hero!.getBoundingClientRect().top + window.scrollY;
+        panels = createShearPanels(hero!, { axis: "vertical", top: heroTopDoc - self.start });
         overlay!.dataset.cutting = "";
         // GSAP owns the tools' transforms outright. Nothing centres them in CSS
         // on purpose: GSAP parses an existing `translateX(-50%)` into its own
@@ -149,7 +181,13 @@ export function CutTransition({ source = "#top" }: { source?: string }) {
 
       const trigger = ScrollTrigger.create({
         trigger: hero,
-        start: "bottom bottom-=1",
+        // `top-=1`, not `top+=1`. The offset moves the VIEWPORT line, so `+=1`
+        // pushes it a pixel down the screen and the hero's top reaches it at
+        // scroll -1 — i.e. before the page has moved, which is precisely the
+        // "already past its start" case this is meant to avoid. Measured: the
+        // panels were live at scroll 0. `-=1` puts the line a pixel above the
+        // viewport top, reached at scroll 1.
+        start: "top top-=1",
         end: "bottom top",
         // `scrub: true`, never a number. Lenis already smooths the scroll
         // position ScrollTrigger reads, so a numeric scrub stacks a second lag
@@ -161,7 +199,9 @@ export function CutTransition({ source = "#top" }: { source?: string }) {
           travel = window.innerHeight;
         },
         // Both edges, both directions: the cut exists whenever the hero is
-        // mid-exit, however the user got there.
+        // mid-exit, however the user got there. `open` is handed the trigger
+        // because the panels' geometry comes from `self.start` — the one thing
+        // that is the same whichever edge fired.
         onEnter: open,
         onEnterBack: open,
         onLeave: close,

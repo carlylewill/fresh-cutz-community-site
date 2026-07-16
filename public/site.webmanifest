@@ -1,12 +1,18 @@
 {
   "name": "Fresh Cutz Barbers",
   "short_name": "Fresh Cutz",
+  "description": "Barber in Wealdstone, Harrow. Afro, Asian & Caucasian hair specialists. Est. 2014.",
   "icons": [
+    { "src": "/logo.svg", "type": "image/svg+xml", "sizes": "any", "purpose": "any" },
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
-  "theme_color": "#1c1a17",
-  "background_color": "#1c1a17",
+  "theme_color": "#14171C",
+  "background_color": "#14171C",
   "display": "standalone",
-  "start_url": "/"
+  "start_url": "/",
+  "scope": "/",
+  "lang": "en-GB",
+  "categories": ["lifestyle", "shopping"]
 }

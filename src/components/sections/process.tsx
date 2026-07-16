@@ -5,96 +5,155 @@ import { useEffect, useRef, useState } from "react";
 import { MEDIA, SIZES } from "@/lib/media";
 import { gsap, ScrollTrigger, useIsoLayoutEffect } from "@/lib/motion";
 
+/**
+ * One clip per beat, and they are four genuinely different scenes — the whole
+ * point of this section is that it is not the same footage four times. Verified
+ * pairwise rather than assumed: the closest pair differs by 44.5 mean luma,
+ * against the 0.61 that exposed the duplicate this section used to ship.
+ *
+ * The mapping is semantic: `processArrive` is the walk-in with the shopfront
+ * sign (it reads as *arriving*, which is what Consultation is), `processCut` is
+ * clippers on the hairline, `processDetail` is close work, `processFinish` is
+ * the spray-down.
+ *
+ * `still` is the sharp 9:16 original, not a frame of the blur-filled clip — see
+ * lib/media.ts. It is what the stacked path shows.
+ */
 const BEATS = [
   {
     time: "10:02",
     step: "Consultation",
     title: "Two minutes before the clippers touch down.",
     copy: "Length, texture, what's not working right now — Baggio or Rahul talks it through before a single cut, not after.",
+    media: MEDIA.processArrive,
+    still: MEDIA.processArriveStill,
+    alt: "A client arriving at Fresh Cutz Barbers in Wealdstone, Harrow",
   },
   {
     time: "10:09",
     step: "The cut",
     title: "Dialled to your hair's grain, not a guard number.",
     copy: "Skin fades, tapers, scissor work — afro, Asian or Caucasian hair, cut with the pattern it actually grows in.",
+    media: MEDIA.processCut,
+    still: MEDIA.processCutStill,
+    alt: "A barber running clippers along a client's hairline at Fresh Cutz Barbers",
   },
   {
     time: "10:24",
     step: "The detail",
     title: "The five minutes that make it look intentional.",
     copy: "Lineups, edge-ups, a hot towel finish. The difference between a haircut and a good haircut.",
+    media: MEDIA.processDetail,
+    still: MEDIA.processDetailStill,
+    alt: "Close detail work on a fresh cut at Fresh Cutz Barbers",
   },
   {
     time: "10:31",
     step: "Out the chair",
     title: "Mirror check, brush down, done.",
     copy: "No rush, no small talk you didn't ask for. Unhurried the whole way through.",
+    media: MEDIA.processFinish,
+    still: MEDIA.processFinishStill,
+    alt: "A barber finishing a client's cut at Fresh Cutz Barbers",
   },
 ];
 
 /**
- * The one condition under which this section scrubs, shared verbatim by the CSS
- * (as `motion-safe:md:`) and by gsap.matchMedia below. `48rem` rather than
- * `768px` to match Tailwind's `md` byte for byte — a media query resolves `rem`
- * against the initial root font size, so the two are the same 768px regardless
- * of any html font-size.
+ * The one condition under which this section pins and plays, shared verbatim by
+ * the CSS (as `motion-safe:md:`) and by gsap.matchMedia below. `48rem` rather
+ * than `768px` to match Tailwind's `md` byte for byte — a media query resolves
+ * `rem` against the initial root font size, so the two are the same 768px
+ * regardless of any html font-size.
  *
- * MOBILE IS DELIBERATELY EXCLUDED, on three counts:
- *   1. iOS Safari's programmatic `currentTime` seeking on an unplayed video is
- *      unreliable, so the mechanic's whole payload is the thing most likely to
- *      silently not happen.
- *   2. The URL bar collapsing resizes the viewport, which fights a pin.
- *   3. Decoding 1080p while seeking every frame is the most expensive thing on
- *      the page, on the weakest hardware, for a decorative effect.
- * A phone gets the stacked list instead — the same content, no pin, no video.
+ * MOBILE IS DELIBERATELY EXCLUDED from the pin: the URL bar collapsing resizes
+ * the viewport and fights it, and four video decoders on the weakest hardware
+ * for a decorative effect is the wrong trade. A phone gets the same four beats
+ * as a stacked list, each with its own sharp portrait still — the per-step story
+ * survives at full quality, it just doesn't move, and Process costs a phone zero
+ * video bytes. A list cannot read as "stuck": nothing is holding the scroll.
  */
-const SCRUB_QUERY = "(prefers-reduced-motion: no-preference) and (min-width: 48rem)";
-
-/** hero-2 is 24fps (ffprobe: r_frame_rate=24/1). One frame = the seek quantum. */
-const FRAME = 1 / 24;
+const PLAY_QUERY = "(prefers-reduced-motion: no-preference) and (min-width: 48rem)";
 
 /**
- * "The Chair, Start to Finish" — the four beats over hero-2.mp4, whose playback
- * position is scrubbed from scroll rather than played. It is 14s of one
- * continuous cut, so advancing the scroll advances the actual haircut: the video
- * IS the timeline.
+ * Crossfade width, in units of one beat's quarter. A beat fades out over the
+ * last 18% of its own quarter while the next fades in over the same window, so
+ * the two always sum to ~1 and there is never a gap to see through.
+ */
+const FADE = 0.18;
+
+/** How far a beat's copy drifts across its own quarter, in px. See `presence`. */
+const DRIFT = 56;
+
+/**
+ * A beat's opacity as a function of `d` — where it sits in its own quarter, in
+ * quarters. d=0 is the start of its quarter, d=1 the end, d<0 means the previous
+ * beat is still on screen.
  *
- * WHY SEEKING IS SAFE HERE (it is normally a jank generator):
- * hero-2 was re-encoded with a keyframe every 0.5s at 24fps, so any seek decodes
- * at most 12 frames from the preceding keyframe. Combined with the two guards in
- * `seek()` below it holds 60fps at 6x CPU throttle — see the notes there.
+ * Pure function of scroll position and nothing else, which is the whole point:
+ * it is what makes 1->0 reverse for free.
+ */
+function presence(d: number): number {
+  if (d <= -FADE || d >= 1) return 0;
+  if (d < 0) return (d + FADE) / FADE; // fading in, over the previous beat's tail
+  if (d > 1 - FADE) return (1 - d) / FADE; // fading out, as the next one fades in
+  return 1;
+}
+
+/**
+ * "The Chair, Start to Finish" — four beats, four different clips, pinned, each
+ * clip full-bleed behind its own step text.
  *
- * `video.currentTime` is not a CSS property, so it is outside the house
- * transform/opacity rule by nature: there is no compositor path for "show a
- * different frame". The rule's intent — never write layout/paint properties per
- * frame — is honoured instead by rate-limiting the write to one per *video*
- * frame and never issuing a seek while one is in flight. Everything else this
- * section animates (beats, rail fill) is transform/opacity only.
+ * EVERYTHING VISUAL IS A PURE FUNCTION OF `self.progress`, and that is a fix
+ * rather than a preference. This section previously drove the beats from
+ * `floor(p*n)` alone, guarded by a bail-unless-the-index-changed. The guard is a
+ * real optimisation — it stops 12 tweens being constructed every scroll frame —
+ * but combined with a discrete index it meant that *within* a beat the only
+ * scroll-linked thing on screen was a 1px rail hairline. For 25% of the scroll
+ * the page ate your scrolling and gave nothing back, then everything moved at
+ * once at the boundary. Users read that, correctly, as "stuck, then it all
+ * happens at the end".
  *
- * REDUCED MOTION / MOBILE: no pin, no scrub, no video element at all. The base
- * markup IS the final state — all four beats in flow over a static still — so
- * those visitors land on a finished section rather than a broken one, and the
- * layout switch is pure CSS (`motion-safe:md:`), never JS. Branching the markup
- * in render would be a hydration mismatch; branching it in an effect would pop
- * the section in after hydration and invalidate every ScrollTrigger below it.
+ * So the split is now by cost, not by convenience:
+ *   - Per frame, as gsap.set (cheap — a direct style write, no tween object):
+ *     rail fill, and every beat's opacity and drift. These are continuous, so
+ *     scrolling always visibly moves something, and scrolling back up runs the
+ *     whole thing backwards with no extra code.
+ *   - On beat change only, still bailed: play/pause and the dot colours. These
+ *     are the genuinely discrete, genuinely expensive ones.
+ *
+ * WHY THESE PLAY RATHER THAN SCRUB. An earlier build seeked one long clip's
+ * `currentTime` from scroll, which worked only because that clip was re-encoded
+ * with a keyframe every 0.5s. These four have 1-2 keyframes in the entire file
+ * (`proc-2-cut`: 2 across 422 frames), so every seek would decode from frame 0 —
+ * hundreds of frames per scroll tick. They also run at three different frame
+ * rates (24/30/25) and from 2.2s to 14.1s, so a per-beat seek would scrub at
+ * four different speeds for no reason.
+ *
+ * REDUCED MOTION / MOBILE: no pin, no scrub, no video. The base markup IS the
+ * final state — four beats in flow, each with its own still — so those visitors
+ * land on a finished section, and the layout switch is pure CSS
+ * (`motion-safe:md:`), never JS. Branching the markup in render would be a
+ * hydration mismatch; branching it in an effect would pop the section in after
+ * hydration and invalidate every ScrollTrigger below it.
  */
 export function Process() {
   const section = useRef<HTMLElement>(null);
   const stage = useRef<HTMLDivElement>(null);
-  const video = useRef<HTMLVideoElement>(null);
   const railFill = useRef<HTMLDivElement>(null);
+  const videos = useRef<(HTMLVideoElement | null)[]>([]);
 
   /**
-   * Whether to put a <video> in the DOM at all. This is a fetch decision, so CSS
-   * cannot make it: a <video> hidden by a media query still downloads, and
-   * <source media> is evaluated once at load and never re-evaluated. Same
-   * construction as <HeroVideo />, and live rather than one-shot — the listener
-   * keeps it in step with gsap.matchMedia, which is watching the same query.
+   * Whether to put <video> elements in the DOM at all. This is a fetch decision,
+   * so CSS cannot make it: a <video> hidden by a media query still downloads,
+   * and <source media> is evaluated once at load and never re-evaluated. It also
+   * gates the stills the other way, so the two media sets are never both in the
+   * document. Live rather than one-shot — the listener keeps it in step with
+   * gsap.matchMedia, which is watching the same query.
    */
-  const [scrubbable, setScrubbable] = useState(false);
+  const [playable, setPlayable] = useState(false);
   useEffect(() => {
-    const q = window.matchMedia(SCRUB_QUERY);
-    const sync = () => setScrubbable(q.matches);
+    const q = window.matchMedia(PLAY_QUERY);
+    const sync = () => setPlayable(q.matches);
     sync();
     q.addEventListener("change", sync);
     return () => q.removeEventListener("change", sync);
@@ -103,59 +162,59 @@ export function Process() {
   useIsoLayoutEffect(() => {
     const mm = gsap.matchMedia(section);
 
-    mm.add(SCRUB_QUERY, () => {
+    mm.add(PLAY_QUERY, () => {
       const beats = gsap.utils.toArray<HTMLElement>(".p-beat", section.current);
+      const media = gsap.utils.toArray<HTMLElement>(".p-media", section.current);
       const dots = gsap.utils.toArray<HTMLElement>(".p-dot", section.current);
       const fill = railFill.current;
-      const vid = video.current;
       if (!beats.length || !stage.current) return;
 
-      gsap.set(beats.slice(1), { autoAlpha: 0, y: 24 });
-      gsap.set(beats[0], { autoAlpha: 1, y: 0 });
       gsap.set(fill, { scaleX: 0 });
 
-      // --- video scrub ---
-      // The latest scroll progress, written by onUpdate and read by the ticker.
-      // The two are deliberately decoupled: onUpdate can fire several times per
-      // frame (and not at all between frames), and a seek issued per scroll
-      // event rather than per rendered frame is the naive version that stutters.
-      let progress = 0;
-      let lastWritten = -1;
-      let duration = 0;
-
-      const readDuration = () => {
-        // Never trust `duration` before metadata: it is NaN until then, and NaN
-        // would poison every subsequent seek.
-        if (vid && Number.isFinite(vid.duration) && vid.duration > 0) duration = vid.duration;
+      /**
+       * Warmed at most once each: preload="none" means nothing is fetched until
+       * we ask, which is the whole byte budget of this section.
+       *
+       * `load()` is NOT free — it resets the element and re-runs resource
+       * selection on the main thread. Calling it from onUpdate (during the
+       * pinned scroll) measured a 175ms spike, so it happens here instead, off
+       * the scroll path, from the approach trigger below.
+       */
+      const warmed = new Set<number>();
+      const warm = (i: number) => {
+        const v = videos.current[i];
+        if (!v || warmed.has(i)) return;
+        warmed.add(i);
+        v.preload = "auto";
+        v.load();
+        // NO decoder pre-roll, and that is measured rather than an omission.
+        // Each clip start costs 2-3 rAF frames of ~33ms even at readyState 4,
+        // and both fixes were worse: play/pause/rewind knocked readyState from 4
+        // back to 2 and cost a 166ms stall (on files with 1-2 keyframes even the
+        // seek to frame 0 dumps the buffer), and priming without the rewind
+        // moved 9 spikes to 8, i.e. noise. The spin-up is inherent to starting
+        // playback and is not main-thread bound — it gets *rarer* under CPU
+        // throttle, and longtask reports zero.
       };
 
-      const seek = () => {
-        if (!vid || !duration) return;
-        // HAVE_CURRENT_DATA. Below this there is no frame to swap to and the
-        // seek would queue up behind the buffer rather than land.
-        if (vid.readyState < 2) return;
-        // A seek is already decoding. Writing currentTime now cancels it and
-        // restarts the walk from the keyframe — this single guard is the
-        // difference between a smooth scrub and a slideshow under throttle.
-        if (vid.seeking) return;
-        // Clamped a frame short of the end: seeking to exactly `duration` is
-        // flaky across browsers and can fire `ended` on a non-looping element.
-        const t = Math.min(progress * duration, duration - FRAME);
-        // A sub-frame delta cannot change the displayed frame, so the decode it
-        // would cost buys nothing.
-        if (Math.abs(t - lastWritten) < FRAME) return;
-        lastWritten = t;
-        vid.currentTime = t;
+      let idleHandle = 0;
+      let idleTimer = 0;
+      const warmQueue = BEATS.map((_, i) => i);
+      const drain = () => {
+        const i = warmQueue.shift();
+        if (i === undefined) return;
+        warm(i);
+        // 400ms, not 1200: at 1200 per clip the queue took up to ~4.8s to drain
+        // and a visitor scrolling in at a normal pace hit beats whose clip had
+        // not started loading — they saw one clip and three dark boxes, and only
+        // on the way back up were all four warm. The timeout is the ceiling, not
+        // the target; idle slots usually fire far sooner.
+        if (typeof requestIdleCallback === "function") {
+          idleHandle = requestIdleCallback(drain, { timeout: 400 });
+        } else {
+          idleTimer = window.setTimeout(drain, 120);
+        }
       };
-
-      if (vid) {
-        // Belt and braces — there is no `autoplay`, but a paused element is the
-        // precondition for seeking to mean anything.
-        vid.pause();
-        readDuration();
-        vid.addEventListener("loadedmetadata", readDuration);
-        gsap.ticker.add(seek);
-      }
 
       let current = -1;
       ScrollTrigger.create({
@@ -165,65 +224,88 @@ export function Process() {
         pin: stage.current,
         // `scrub: true`, never a number. Lenis already smooths the scroll
         // position ScrollTrigger reads, so a numeric scrub stacks a second lag
-        // and the footage visibly trails the page (same call as <HeroParallax />
+        // and the rail visibly trails the page (same call as <HeroParallax />
         // and <CutTransition />).
         scrub: true,
         onUpdate: (self) => {
-          progress = self.progress;
-          // Transform only, and cheap enough to run unguarded every frame.
-          if (fill) gsap.set(fill, { scaleX: self.progress });
+          const raw = self.progress * BEATS.length;
 
-          // floor(p * n), not round(p * (n-1)): this gives every beat an equal
-          // quarter of the scroll (round() hands the first and last a half
-          // share), and it puts the boundary between beat i-1 and beat i at
-          // exactly i/n — which is where the rail's dots sit, so the fill head
-          // crosses a dot at the instant that beat takes over.
-          const idx = Math.min(BEATS.length - 1, Math.floor(self.progress * BEATS.length));
-          // The live site re-tweened all 12 elements on every scrub frame. Bail
-          // unless the active beat actually changed.
+          // ---- continuous, every frame: transform/opacity only, via gsap.set
+          // so no tween object is constructed. This is what makes the pin feel
+          // connected to the scroll instead of frozen.
+          if (fill) gsap.set(fill, { scaleX: self.progress });
+          beats.forEach((b, i) => {
+            const d = raw - i;
+            // The copy drifts up through its own quarter and hands over to the
+            // next one already moving — so there is always something responding
+            // to the wheel, at every scroll position, in both directions.
+            gsap.set(b, { autoAlpha: presence(d), y: (0.5 - d) * DRIFT });
+          });
+          media.forEach((m, i) => gsap.set(m, { autoAlpha: presence(raw - i) }));
+
+          // ---- discrete, on beat change only
+          // `raw + FADE` rather than `raw`: a clip must start playing the moment
+          // it starts fading IN, not when it finishes. Switching at the boundary
+          // would fade a frozen frame up over ~135px of scroll and then start it
+          // — which is its own little "stuck, then it moves". The outgoing clip
+          // pauses at the same instant, so exactly one decoder is ever running.
+          const idx = Math.min(BEATS.length - 1, Math.floor(raw + FADE));
           if (idx === current) return;
           current = idx;
 
-          beats.forEach((b, i) =>
-            gsap.to(b, {
-              autoAlpha: i === idx ? 1 : 0,
-              y: i === idx ? 0 : i < idx ? -16 : 24,
-              duration: 0.35,
-              overwrite: true,
-            }),
-          );
+          videos.current.forEach((v, i) => {
+            if (!v) return;
+            if (i === idx) void v.play().catch(() => {});
+            else v.pause();
+          });
           dots.forEach((d, i) =>
             gsap.to(d, {
               // DOCUMENTED EXCEPTION to transform/opacity-only: backgroundColor
-              // is a paint property. It is four 10px dots that repaint only when
-              // the beat index changes (never per scroll frame, thanks to the
-              // bail above), so the layered-dot alternative would double the DOM
-              // to save a repaint too small to measure.
+              // is a paint property. Four 10px dots, repainted only when the
+              // beat index changes — the layered-dot alternative would double the
+              // DOM to save a repaint too small to measure. Kept behind the bail
+              // for exactly that reason.
               backgroundColor: i <= idx ? "var(--color-brass)" : "var(--color-line)",
               scale: i === idx ? 1.4 : 1,
               duration: 0.3,
-              overwrite: true,
+              overwrite: "auto",
             }),
           );
         },
       });
 
-      // The ScrollTrigger and every gsap.set/to above are collected by the
-      // matchMedia context and reverted for us. The ticker callback and the DOM
-      // listener are not — GSAP has no way to know about them, and a ticker
-      // callback that outlives the section would seek a detached element on
-      // every frame for the rest of the session.
+      // 1.5 viewports of warning, and beats 1-2 warmed synchronously rather than
+      // through the queue: this fires during ordinary scrolling, nowhere near the
+      // pin, so it can afford the load() calls the pinned scroll cannot. Beat 1
+      // is on screen the instant the section pins and cannot wait for an idle
+      // slot. Anyone who never scrolls this far still pays nothing.
+      const prefetch = ScrollTrigger.create({
+        trigger: section.current,
+        start: "top bottom+=150%",
+        once: true,
+        onEnter: () => {
+          warm(0);
+          warm(1);
+          drain();
+        },
+      });
+
+      // The ScrollTriggers and every gsap.set/to above are collected by the
+      // matchMedia context and reverted for us. These are not: a <video> left
+      // playing behind a reverted section decodes forever, and a queued idle
+      // callback would warm clips for a section that no longer exists.
       return () => {
-        if (!vid) return;
-        gsap.ticker.remove(seek);
-        vid.removeEventListener("loadedmetadata", readDuration);
+        prefetch.kill();
+        if (idleHandle && typeof cancelIdleCallback === "function") cancelIdleCallback(idleHandle);
+        if (idleTimer) clearTimeout(idleTimer);
+        videos.current.forEach((v) => v?.pause());
       };
     });
 
     // Reverts the pin too — a pinned section that skips this leaves its
     // pin-spacer div behind and every trigger below it measures against a ghost.
     return () => mm.revert();
-  }, [scrubbable]);
+  }, [playable]);
 
   return (
     <section
@@ -236,79 +318,65 @@ export function Process() {
       // apply on mobile too, where there is no pin to fill it).
       style={{ "--p-beats": BEATS.length } as React.CSSProperties}
     >
-      {/*
-       * Pinned on desktop; on mobile/reduced-motion it is an ordinary block whose
-       * height comes from the beat list inside it. Either way the media below is
-       * absolutely positioned within it, so neither the video nor the still can
-       * reflow anything when it loads — there is nothing below them to push.
-       */}
-      <div
-        ref={stage}
-        className="relative overflow-hidden motion-safe:md:h-[100svh]"
-        // Reserves the box before the media arrives in the one case where the
-        // stage would otherwise be empty: mobile, where the still is the only
-        // thing painting and the beats sit over it.
-      >
-        <div className="bg-ink-deep absolute inset-0">
-          {scrubbable ? (
-            /*
-             * NOT autoplay, NOT loop — the scroll is the transport. preload="auto"
-             * because it cannot seek smoothly through a buffer it does not have;
-             * the bytes are free regardless, since the hero already autoplays this
-             * exact URL and the browser serves both elements from one download.
-             *
-             * `poster` paints the first frame while the buffer fills, so the stage
-             * is never empty. It is hero-poster.jpg — the video's own frame — so
-             * the handoff to the real footage is invisible.
-             */
-            <video
-              ref={video}
-              className="absolute inset-0 h-full w-full object-cover"
-              poster={MEDIA.heroLoop.poster}
-              muted
-              playsInline
-              preload="auto"
-              aria-hidden
-            >
-              <source src={MEDIA.heroLoop.src} type="video/mp4" />
-            </video>
-          ) : (
-            /*
-             * The stacked path's still. cutting.jpg rather than the video's own
-             * poster because this path is overwhelmingly phones: a portrait 896x1200
-             * covers a tall narrow box with room to spare, where a 16:9 frame would
-             * crop to a slim centre column and lose the barber entirely. Desktop
-             * reduced-motion gets the known ~1.6x upscale, cropped to the middle
-             * band — which is where the action is.
-             *
-             * Lazy (next/image's default), which is what keeps it honest: the
-             * section is far below the fold, so by the time it could load the
-             * scrubbable check has long since run and unmounted it on desktop.
-             * Only the phones that actually use it ever fetch it.
-             */
-            <Image
-              src={MEDIA.cutting.src}
-              alt=""
-              fill
-              sizes={SIZES.fullBleed}
-              className="object-cover object-center"
-              aria-hidden
-            />
-          )}
-        </div>
+      {/* Pinned on desktop; on mobile/reduced-motion an ordinary block whose
+          height comes from the beat list inside it. */}
+      <div ref={stage} className="relative overflow-hidden motion-safe:md:h-[100svh]">
+        {/*
+         * The full-bleed clips, one per beat, stacked and crossfaded in place.
+         * Only on the playing path — the stacked path carries its own portrait
+         * stills inside each beat, so the two media sets are never both in the
+         * document and a phone fetches none of this.
+         */}
+        {playable ? (
+          <div className="absolute inset-0" aria-hidden>
+            {BEATS.map((b, i) => (
+              <div key={b.step} className="p-media absolute inset-0">
+                {/*
+                 * The poster is NOT optional decoration — it is why a beat is
+                 * never a blank box. `preload="none"` means a clip has no frame
+                 * to show until it is warmed, and a video with nothing decoded
+                 * paints transparent; without this the early beats were dark
+                 * rectangles until their clip arrived. next/image is used rather
+                 * than the <video poster> attribute so these are re-encoded and
+                 * sized (the attribute would serve the raw 1920x1080 JPEG, ~390KB
+                 * across the four). They are lazy, but every one of them is
+                 * inside the viewport the moment the section is, so they all
+                 * arrive together and ahead of the clips.
+                 */}
+                <Image
+                  src={b.media.poster}
+                  alt=""
+                  fill
+                  sizes={SIZES.fullBleed}
+                  className="object-cover"
+                />
+                <video
+                  ref={(el) => {
+                    videos.current[i] = el;
+                  }}
+                  className="absolute inset-0 h-full w-full object-cover"
+                  muted
+                  playsInline
+                  loop
+                  preload="none"
+                >
+                  <source src={b.media.src} type="video/mp4" />
+                </video>
+              </div>
+            ))}
+          </div>
+        ) : null}
 
         {/*
-         * TWO overlay treatments, one per layout, because the two layouts put the
-         * copy in completely different places and a single gradient cannot serve
-         * both.
+         * The scrim, and it is the playing path's alone. The stacked path puts
+         * its copy on solid ink beside a still, so it has no image behind text to
+         * fight and a scrim there would only mute the photo for nothing.
          *
-         * Scrubbing (below): v2's hero vignette verbatim (radial, ellipse at
-         * 30% 40%) plus a bottom ramp. The footage is a locked-off wide shot with
-         * the barber working centre-right and the left third an empty wall, and
-         * one beat at a time sits in that empty corner — so the vignette settles
-         * the edges and the ramp buys that corner its contrast, both without
-         * touching the action. Art direction, and it depends on knowing exactly
-         * where the words are.
+         * v2's hero vignette verbatim (radial, ellipse at 30% 40%) plus a bottom
+         * ramp. Both earn their place: the beats sit bottom-left, the blur-filled
+         * wings are already soft there, and the sharp action is centre — so the
+         * vignette settles the frame and the ramp buys the copy its contrast
+         * without either one covering the barber.
          */}
         <div
           className="absolute inset-0 hidden motion-safe:md:block"
@@ -319,38 +387,47 @@ export function Process() {
           aria-hidden
         />
         <div
-          className="from-ink-deep via-ink-deep/60 to-ink-deep/25 absolute inset-0 hidden bg-gradient-to-t motion-safe:md:block"
+          className="from-ink-deep via-ink-deep/70 to-ink-deep/30 absolute inset-0 hidden bg-gradient-to-t motion-safe:md:block"
           aria-hidden
         />
-        {/*
-         * Stacked: all four beats run the full height of the still, so there is no
-         * empty corner to aim at and the gradients above would leave copy sitting
-         * on the brightest part of the frame — measured, not assumed: the body
-         * text was unreadable over the middle of cutting.jpg at 390px. A flat
-         * scrim instead. It demotes the photo to texture, which is the honest
-         * trade on a phone: it cannot be both legible background and visible
-         * subject, and the words are the reason the section exists.
-         */}
-        <div className="bg-ink-deep/80 absolute inset-0 motion-safe:md:hidden" aria-hidden />
 
-        <div className="relative z-10 mx-auto flex max-w-[1240px] flex-col px-[clamp(20px,4vw,48px)] py-24 motion-safe:md:h-full motion-safe:md:justify-end motion-safe:md:pt-0">
+        <div className="relative z-10 mx-auto flex h-full max-w-[1240px] flex-col justify-center px-[clamp(20px,4vw,48px)] py-24 motion-safe:md:justify-end motion-safe:md:pt-0 motion-safe:md:pb-24">
           <div className="eyebrow sec-eyebrow">The Chair, Start to Finish</div>
 
           {/*
-           * Desktop: a fixed-height stage with the beats absolutely stacked, so it
-           * must reserve the tallest one or the rail below it jumps between beats.
-           * Mobile/reduced-motion: the same four beats in flow, spaced — which is
-           * the base state, so it needs no JS to be correct.
+           * Desktop: a fixed-height box with the beats absolutely stacked, so it
+           * must reserve the tallest one or the rail below it jumps between
+           * beats. Mobile/reduced-motion: the same four beats in flow — the base
+           * state, so it needs no JS to be correct.
            */}
-          <div className="mt-4 space-y-12 motion-safe:md:relative motion-safe:md:h-[260px] motion-safe:md:space-y-0">
+          <div className="mt-6 space-y-16 motion-safe:md:relative motion-safe:md:mt-4 motion-safe:md:h-[260px] motion-safe:md:space-y-0">
             {BEATS.map((b) => (
               <div
                 key={b.step}
-                className="p-beat max-w-2xl motion-safe:md:absolute motion-safe:md:inset-x-0 motion-safe:md:top-0"
+                className="p-beat motion-safe:md:absolute motion-safe:md:inset-x-0 motion-safe:md:top-0 motion-safe:md:max-w-2xl"
               >
+                {/*
+                 * The stacked path's still. `aspect-[9/16]` reserves the box
+                 * before a byte arrives, so it cannot reflow the triggers below.
+                 * Only in the DOM when the videos are not, so desktop never
+                 * fetches it and a phone never fetches a clip.
+                 */}
+                {!playable ? (
+                  <div className="ring-line relative mb-6 aspect-[9/16] w-full max-w-[220px] overflow-hidden rounded-md bg-black/40 ring-1">
+                    <Image
+                      src={b.still.src}
+                      alt={b.alt}
+                      width={b.still.width}
+                      height={b.still.height}
+                      sizes={SIZES.processPanel}
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                  </div>
+                ) : null}
+
                 <p className="font-ticket text-brass text-3xl tracking-[0.08em]">{b.time}</p>
-                {/* The step name lives in the rail on desktop; the rail is gone on
-                    the stacked path, so it comes back here instead. */}
+                {/* The step name lives in the rail on desktop; the rail is gone
+                    on the stacked path, so it comes back here instead. */}
                 <p className="font-mono text-steel mt-1 text-[10.5px] tracking-[0.2em] uppercase motion-safe:md:hidden">
                   {b.step}
                 </p>
@@ -363,10 +440,10 @@ export function Process() {
           </div>
 
           {/*
-           * The rail belongs to the scrub: it reports scroll position, and with no
-           * scroll to report (every beat already on screen) it would be four lit
-           * dots saying nothing. The stacked path drops it and labels each beat
-           * directly instead.
+           * The rail belongs to the scrub: it reports scroll position, and with
+           * no scroll to report (every beat already on screen) it would be four
+           * lit dots saying nothing. The stacked path drops it and labels each
+           * beat directly instead.
            */}
           <div className="relative mt-10 hidden motion-safe:md:block">
             <div className="bg-line absolute inset-x-0 top-[5px] h-px" aria-hidden />

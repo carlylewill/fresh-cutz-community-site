@@ -5,6 +5,10 @@ const ROSTER = [
     name: "Baggio",
     copy: "Runs the shop. Known for patience, precision, and comparing your hair to your reference photos throughout the cut — detail after detail.",
     tags: ["Afro-textured", "Asian hair", "Caucasian hair", "Kids' first cuts"],
+    /* The razor is the detail tool — line-ups and edge-ups. Matches "detail
+       after detail" and the trimmer work in cutting.jpg. NOT a claim about what
+       hair he cuts: his tags say all four, which is the whole point of the site. */
+    tool: "razor",
   },
   {
     initial: "R",
@@ -12,6 +16,8 @@ const ROSTER = [
     name: "Rahul",
     copy: "Trusted by a loyal Asian clientele. Clean skin fades, textured crops and careful scissor work on thick, straight hair.",
     tags: ["Asian hair specialist", "Skin fades", "Scissor cuts"],
+    /* His copy says "careful scissor work"; his tag says "Scissor cuts". */
+    tool: "scissors-comb",
   },
 ];
 
@@ -37,6 +43,7 @@ export function Barbers() {
               className="barber reveal border-line bg-ink-soft relative overflow-hidden rounded-md border px-[30px] py-[34px]"
               data-anim="card"
               data-batch=""
+              data-tool={b.tool}
             >
               <span className="b-init" aria-hidden>
                 {b.initial}

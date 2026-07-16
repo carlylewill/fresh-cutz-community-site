@@ -1,0 +1,63 @@
+/*
+ * Only hides the native pointer once the component has actually decided to run
+ * (pointer:fine + no-reduced-motion). Applying `cursor: none` from a stylesheet
+ * unconditionally would leave a touch user, or a reduced-motion user, with no
+ * pointer at all and nothing drawn in its place.
+ */
+.has-scissor-cursor,
+.has-scissor-cursor a,
+.has-scissor-cursor button,
+.has-scissor-cursor .ticket,
+.has-scissor-cursor .chip {
+  cursor: none;
+}
+
+.sc-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 34px;
+  height: 34px;
+  /* The blades meet at the SVG's centre, so the hotspot must sit there rather
+     than at the element's top-left, or the scissors cut 17px off the target. */
+  margin: -17px 0 0 -17px;
+  z-index: 300;
+  pointer-events: none;
+  opacity: 0;
+  /* Transformed on every mousemove for the life of the page — one of the few
+     places a standing will-change is genuinely earned. */
+  will-change: transform;
+  filter: drop-shadow(0 0 6px rgba(199, 168, 59, 0.45));
+}
+.sc-cursor svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.sc-clipping {
+  position: fixed;
+  width: 2px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--color-steel);
+  opacity: 0.85;
+  z-index: 299;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* No pointer to replace, so never hide the real one. */
+@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .sc-cursor,
+  .sc-clipping {
+    display: none !important;
+  }
+  .has-scissor-cursor,
+  .has-scissor-cursor a,
+  .has-scissor-cursor button,
+  .has-scissor-cursor .ticket,
+  .has-scissor-cursor .chip {
+    cursor: auto;
+  }
+}

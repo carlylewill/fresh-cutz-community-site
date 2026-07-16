@@ -61,34 +61,61 @@ export type ShearPanels = {
  * The tear.
  *
  * Offsets from the centre line, as a percentage of the panel's width, sampled
- * evenly down its height. Hand-authored rather than generated: it is 15 numbers
- * that decide whether the edge reads as torn paper or as broken CSS, and they
- * want to be looked at and tuned, not re-rolled differently on every mount.
+ * evenly down its height. Hand-authored rather than generated: these numbers
+ * decide whether the edge reads as torn paper or as broken CSS, and they want to
+ * be looked at and tuned, not re-rolled differently on every mount.
  *
- * Amplitude is ~2.4% — ~35px at 1440, ~9px at 390. The first pass was half this
- * and it was the right instinct for a STATIC edge: at rest, subtle reads as
- * paper and loud reads as a mistake. But this edge is never seen at rest. It is
- * only on screen while the two halves are travelling apart, and a 14px jag on a
- * moving edge is invisible — the user's note that the edges didn't look torn was
- * simply correct. An edge that moves has to be drawn louder than one that
- * doesn't.
+ * TUNING HISTORY, so nobody walks this road a fourth time. The amplitude went
+ * 1.2% -> 2.4% ("too small, doesn't read as torn") -> 4.2% ("enormous cartoon
+ * sawtooth teeth; reads as broken"). Both corrections were right and the fix was
+ * never the amplitude alone: at 15 points over a viewport, each tooth is ~64px
+ * tall, so ANY amplitude loud enough to see becomes a zigzag with a huge
+ * horizontal swing per tooth. Frequency was the missing variable.
+ *
+ * So: 25 points at max 3.0% rather than 15 at 4.2%. Two things carry it —
+ *
+ *   FREQUENCY. ~37px between points at 1440, ~35px at 390. Small enough that a
+ *   jag is an edge detail rather than a feature of the layout.
+ *
+ *   VARIED DEPTH, ON A STRICT ALTERNATION. Every entry crosses the centre line;
+ *   the magnitudes are what wander (0.4% to 3.0%, no two neighbours alike).
+ *
+ * That second one is the whole thing, and it is worth being precise about
+ * because the obvious reading of "irregular" is wrong. A draft of this tried
+ * irregularity by SIGN — runs of two or three same-side entries, on the theory
+ * that a tear has near-straight stretches a saw doesn't. Screenshotted, it was
+ * the worst of the three: each run merges its segments into one long smooth
+ * diagonal, so the edge loses its high frequency exactly where it is most
+ * visible and the seam reads as a giant lightning bolt. The gap between the
+ * halves is a constant-width ribbon (both edges are this same polyline), so
+ * low-frequency wander in the polyline becomes a wandering ribbon — the single
+ * most cartoonish thing this edge can do.
+ *
+ * Alternating every point keeps the ribbon straight and lets the depth do the
+ * work: the edge flips side every ~37px, and because adjacent swings run from
+ * 0.9% to 5.6% apart it is ragged rather than machined. Fine and irregular reads
+ * as torn; coarse and irregular reads as broken, whatever the amplitude.
+ *
+ * The edge is only ever seen in motion, while the halves travel apart, so it has
+ * to be drawn louder than a static edge would be — that part of the 2.4% -> 4.2%
+ * reasoning stands, and 3.0% (~43px at 1440, ~12px at 390) keeps it. What 4.2%
+ * bought on top of that was not legibility, it was a comic-book tear.
  *
  * The SAME array drives both halves, which is the whole trick: the left half's
  * right edge and the right half's left edge are the same polyline, so at rest
- * they interlock perfectly with no seam and no overlap. Two independent
- * jitters would show a ragged gap before the shear ever started.
- */
-/*
- * Amplitude raised again (max 2.4% -> 4.2%) — the previous pass was still
- * reading as "wobbly" rather than "torn". Deliberately angular rather than
- * wave-like: consecutive entries swing across the centre line instead of
- * drifting around it, because a blade leaves facets, not ripples.
+ * they interlock perfectly with no seam and no overlap. Two independent jitters
+ * would show a ragged gap before the shear ever started. It also drives the
+ * comb's x on the way back up (see tearOffsetAt), so the mend knits along the
+ * identical jags the cut left.
  *
  * First and last are pinned to 0 so the cut meets the top and bottom edges
  * exactly — a non-zero endpoint would leave a notch at the viewport edge where
  * the two halves fail to meet.
  */
-const TEAR = [0, 3.2, -2.1, 4.2, -1.6, 2.6, -3.9, 1.8, -3.0, 3.5, -1.1, 2.8, -3.3, 1.4, 0];
+const TEAR = [
+  0, 1.6, -0.7, 2.3, -1.1, 0.5, -2.6, 1.2, -0.4, 3.0, -1.5, 0.8, -2.2, 1.9, -0.6, 2.7, -1.3, 0.4,
+  -2.4, 1.5, -0.9, 2.0, -1.7, 0.6, 0,
+];
 
 /**
  * How far a vertical half must travel (in % of its own width) to fully clear the
@@ -174,16 +201,34 @@ function prepareClone(clone: HTMLElement) {
  * Copies `source` into two fixed, opaque, viewport-sized panels clipped to its
  * two halves, and inserts them into <body>.
  *
- * The copy is positioned from `source.getBoundingClientRect()` at call time, so
- * whatever the user is looking at the instant this runs is what freezes — the
- * panel is a pixel-accurate stand-in, not an assumption that the section
- * happens to be flush with the viewport.
+ * `top` — WHERE THE COPY SITS, and the one number that has to be right.
+ *
+ * The panels stand in for `source` AT PROGRESS 0 of the range that owns them:
+ * closed, they must be pixel-identical to the real section, because progress 0
+ * is the moment the panels are built or destroyed and the real section takes
+ * over. Everything after that is the halves travelling away from a picture that
+ * already matched.
+ *
+ * It defaults to `getBoundingClientRect().top` because for a range entered from
+ * the top — scrolling down, onEnter at `start` — those are the same number.
+ * Entered from the BOTTOM they are not, and that is a ~900px difference: on
+ * `onEnterBack` the caller is at `end`, where the section has already scrolled
+ * clean off, and freezing the live rect parks the copy a viewport above the
+ * screen. What is left inside the panel is its own opaque [data-tone] fill and
+ * nothing else — two grey slabs closing over the page, then the real section
+ * snapping in at progress 0. So a caller that can be entered from either edge
+ * must state the progress-0 offset rather than let it be read off the clock.
  */
 export function createShearPanels(
   source: HTMLElement,
-  { tone = "ink", axis = "horizontal" }: { tone?: ShearTone; axis?: ShearAxis } = {},
+  {
+    tone = "ink",
+    axis = "horizontal",
+    top,
+  }: { tone?: ShearTone; axis?: ShearAxis; top?: number } = {},
 ): ShearPanels {
-  const rect = source.getBoundingClientRect();
+  const live = source.getBoundingClientRect();
+  const rect = { left: live.left, width: live.width, height: live.height, top: top ?? live.top };
   const tear = axis === "vertical" ? tearClipPaths() : null;
 
   const make = (half: "a" | "b"): HTMLElement => {
@@ -199,16 +244,17 @@ export function createShearPanels(
     panel.setAttribute("aria-hidden", "true");
 
     // The horizontal halves take their clip from globals.css (a straight edge on
-    // --cut-y). The vertical ones are torn, and a torn edge is 15 computed
-    // points — it can only be expressed here.
+    // --cut-y). The vertical ones are torn, and a torn edge is a couple of dozen
+    // computed points — it can only be expressed here.
     if (tear) panel.style.clipPath = half === "a" ? tear.left : tear.right;
 
     const clone = source.cloneNode(true) as HTMLElement;
     prepareClone(clone);
+    settleScrub(clone);
     clone.classList.add("shear-clone");
-    // The rect, not `inset: 0`: the section may be part-scrolled when the range
-    // opens, and the panel has to reproduce that exact offset or the copy
-    // visibly jumps into place at the freeze.
+    // A rect, not `inset: 0`: the section may be part-scrolled at progress 0, and
+    // the panel has to reproduce that exact offset or the copy visibly jumps into
+    // place at the freeze.
     clone.style.top = `${rect.top}px`;
     clone.style.left = `${rect.left}px`;
     clone.style.width = `${rect.width}px`;
@@ -293,6 +339,36 @@ export function createRiser(
   document.body.appendChild(riser);
 
   return { inner, shade, destroy: () => riser.remove() };
+}
+
+/**
+ * The other half of "the copy must match at progress 0" — see createShearPanels.
+ *
+ * Getting the panel's offset right puts the copy back on screen; it does not
+ * make it match. A scrubbed transform is the section's position on ITS OWN
+ * trigger's clock, written inline by GSAP, and cloneNode copies it verbatim. The
+ * hero has two (<HeroParallax /> scrubs `.hero-bg .hero-media` to yPercent 12 and
+ * `#razor-wrap` to -18 across exactly the same scroll the cut spans), so a copy
+ * taken on the way back up freezes the backdrop 108px down and the razor 90px up
+ * — and holds them there while the halves close over a real hero that is at 0.
+ * Measured: clone `translate(0, 108)` against a real hero at `translate(0, 18)`.
+ *
+ * Clearing them lands the copy on the untransformed rest state, which IS the
+ * progress-0 state: both parallax ranges start where the cut's does. It is also
+ * what the copy already got for free coming down, where the tween had not moved
+ * yet — so this makes the two directions produce the same picture rather than
+ * teaching one of them a new trick.
+ *
+ * Inline transforms only. Anything positioned by a stylesheet is untouched, and
+ * everything else in a settled hero (the headline's slide, <Magnetic />'s hover)
+ * is at rest at 0 anyway, which is exactly where this leaves it.
+ */
+function settleScrub(clone: HTMLElement) {
+  clone.querySelectorAll<HTMLElement>("[style]").forEach((el) => {
+    if (el.style.transform) el.style.transform = "";
+    // Cloned from a live tween's target; the copy tweens nothing.
+    if (el.style.willChange) el.style.willChange = "";
+  });
 }
 
 /**
