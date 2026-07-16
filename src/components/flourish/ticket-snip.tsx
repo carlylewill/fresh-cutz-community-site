@@ -101,12 +101,22 @@ const COMB_SVG = `
           stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/>
   </svg>`;
 
-const RAZOR_SVG = `
-  <svg class="tk-tool tk-razor" viewBox="0 0 100 100" fill="none">
-    <path class="tk-razor-blade" d="M16 58 L74 34 L82 44 L24 68 Z"
-          stroke="currentColor" stroke-width="5" stroke-linejoin="round"/>
-    <path d="M22 66 L12 78" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
-    <circle cx="12" cy="80" r="4" stroke="currentColor" stroke-width="4"/>
+// Trimmer, not a straight razor: cutting.jpg is Baggio working with clippers,
+// so this is the tool he actually uses. The body is the handle; the blade group
+// is the fine cutting head that gets the buzz.
+const TRIMMER_SVG = `
+  <svg class="tk-tool tk-trimmer" viewBox="0 0 100 100" fill="none">
+    <rect x="30" y="24" width="40" height="46" rx="7"
+          stroke="currentColor" stroke-width="5"/>
+    <line x1="42" y1="36" x2="42" y2="58" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
+    <line x1="58" y1="36" x2="58" y2="58" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
+    <g class="tk-trimmer-head">
+      <rect x="34" y="70" width="32" height="9" rx="2" stroke="currentColor" stroke-width="4"/>
+      <line x1="39" y1="79" x2="39" y2="84" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+      <line x1="47" y1="79" x2="47" y2="84" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+      <line x1="53" y1="79" x2="53" y2="84" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+      <line x1="61" y1="79" x2="61" y2="84" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+    </g>
   </svg>`;
 
 const EDGE_SVG = `
@@ -116,7 +126,7 @@ const EDGE_SVG = `
   </svg>`;
 
 const barberFx = (isRazor: boolean) =>
-  `<span class="tk-fx" aria-hidden="true">${EDGE_SVG}${isRazor ? RAZOR_SVG : SCISSORS_SVG + COMB_SVG}</span>`;
+  `<span class="tk-fx" aria-hidden="true">${EDGE_SVG}${isRazor ? TRIMMER_SVG : SCISSORS_SVG + COMB_SVG}</span>`;
 
 /**
  * Service tickets: scissors cut round, comb mends on the way out.
@@ -176,7 +186,7 @@ export function TicketSnip() {
           t: 1,
           // A calm lap: slow enough to read as a tool working an edge, not a
           // light chasing the border. ~2.4s for a full circuit.
-          duration: 2.4,
+          duration: 3.2,
           ease: "none",
           onUpdate: () => {
             placeOnPerimeter(scissors, card, p.t);
@@ -248,7 +258,7 @@ export function TicketSnip() {
         const fx = card.querySelector<HTMLElement>(".tk-fx")!;
         const cut = fx.querySelector<SVGRectElement>(".tk-cut")!;
         const tools = Array.from(fx.querySelectorAll<HTMLElement>(".tk-tool"));
-        const blade = fx.querySelector(".tk-razor-blade");
+        const head = fx.querySelector(".tk-trimmer-head");
         const a = fx.querySelector(".tk-blade-a");
         const b = fx.querySelector(".tk-blade-b");
         const comb = fx.querySelector<HTMLElement>(".tk-comb");
@@ -260,8 +270,9 @@ export function TicketSnip() {
         // children, and the tool's own motion runs as its own repeating timeline.
         const buzz = gsap.timeline({ paused: true, repeat: -1, yoyo: true });
         if (isRazor) {
-          // A razor is rocked along the edge, not opened and shut like shears.
-          buzz.to(blade, { rotate: -7, transformOrigin: "50px 50px", duration: 0.22 }, 0);
+          // A trimmer vibrates in place — a tiny, fast oscillation of the cutting
+          // head, not a rock. Sub-pixel travel at high frequency reads as a buzz.
+          buzz.to(head, { y: 1.4, duration: 0.05, ease: "none" }, 0);
         } else {
           buzz
             .to(a, { rotate: -15, transformOrigin: "26px 50px", duration: 0.13 }, 0)
@@ -272,7 +283,7 @@ export function TicketSnip() {
           t: 1,
           // Same calm pace as the ticket lap — the barber cards are larger, so a
           // touch slower keeps the travel speed even between the two.
-          duration: 2.8,
+          duration: 4.0,
           ease: "none",
           onUpdate: () => {
             if (isRazor) {
