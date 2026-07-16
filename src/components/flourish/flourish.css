@@ -26,7 +26,7 @@
    pair — change one and the blade stops riding its own cut. */
 .tk-edge {
   position: absolute;
-  inset: 17px;
+  inset: 2px;
   width: auto;
   height: auto;
   overflow: visible;

@@ -35,7 +35,7 @@ import "./flourish.css";
  * previous 6px inset a 24px tool showed a 6px sliver, which is why the line
  * appeared to travel on its own. This must stay >= half the tool's width.
  */
-const RIDE_INSET = 17;
+const RIDE_INSET = 16;
 
 /** Walk a tool clockwise around the card's inset perimeter. */
 function placeOnPerimeter(el: HTMLElement, card: HTMLElement, t: number, inset = RIDE_INSET) {
@@ -167,14 +167,16 @@ export function TicketSnip() {
          */
         const buzz = gsap
           .timeline({ paused: true, repeat: -1, yoyo: true })
-          .to(a, { rotate: -15, transformOrigin: "26px 50px", duration: 0.085 }, 0)
-          .to(b, { rotate: 15, transformOrigin: "26px 50px", duration: 0.085 }, 0);
+          .to(a, { rotate: -15, transformOrigin: "26px 50px", duration: 0.13 }, 0)
+          .to(b, { rotate: 15, transformOrigin: "26px 50px", duration: 0.13 }, 0);
 
         // ease: "none" so the seam between laps is invisible — any easing would
         // decelerate the blade into the corner it is about to leave from.
         const cutTl = gsap.timeline({ paused: true, repeat: -1 }).to(p, {
           t: 1,
-          duration: 1.15,
+          // A calm lap: slow enough to read as a tool working an edge, not a
+          // light chasing the border. ~2.4s for a full circuit.
+          duration: 2.4,
           ease: "none",
           onUpdate: () => {
             placeOnPerimeter(scissors, card, p.t);
@@ -190,7 +192,7 @@ export function TicketSnip() {
             q,
             {
               t: 1,
-              duration: 0.7,
+              duration: 1.4,
               ease: "power2.out",
               onUpdate: () => {
                 // Anticlockwise from where the scissors finished: the comb
@@ -259,16 +261,18 @@ export function TicketSnip() {
         const buzz = gsap.timeline({ paused: true, repeat: -1, yoyo: true });
         if (isRazor) {
           // A razor is rocked along the edge, not opened and shut like shears.
-          buzz.to(blade, { rotate: -7, transformOrigin: "50px 50px", duration: 0.16 }, 0);
+          buzz.to(blade, { rotate: -7, transformOrigin: "50px 50px", duration: 0.22 }, 0);
         } else {
           buzz
-            .to(a, { rotate: -15, transformOrigin: "26px 50px", duration: 0.09 }, 0)
-            .to(b, { rotate: 15, transformOrigin: "26px 50px", duration: 0.09 }, 0);
+            .to(a, { rotate: -15, transformOrigin: "26px 50px", duration: 0.13 }, 0)
+            .to(b, { rotate: 15, transformOrigin: "26px 50px", duration: 0.13 }, 0);
         }
 
         const tl = gsap.timeline({ paused: true, repeat: -1 }).to(p, {
           t: 1,
-          duration: 1.25,
+          // Same calm pace as the ticket lap — the barber cards are larger, so a
+          // touch slower keeps the travel speed even between the two.
+          duration: 2.8,
           ease: "none",
           onUpdate: () => {
             if (isRazor) {
