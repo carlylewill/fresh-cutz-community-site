@@ -19,11 +19,17 @@ export const metadata: Metadata = {
     images: ["/og-image.jpg"],
   },
   icons: {
+    // SVG first so capable browsers get the vector; the PNGs are the fallback
+    // and favicon.ico is last for legacy. All of them are generated from
+    // logo.svg — the old set drifted out of sync with the site (the logo read
+    // "EST. 2014" against a site that said 2015), which is what happens when
+    // the marks are separate artefacts rather than one source.
     icon: [
-      { url: "/favicon.ico", sizes: "48x48" },
-      { url: "/favicon-16x16.png", type: "image/png", sizes: "16x16" },
+      { url: "/logo.svg", type: "image/svg+xml" },
       { url: "/favicon-32x32.png", type: "image/png", sizes: "32x32" },
+      { url: "/favicon-16x16.png", type: "image/png", sizes: "16x16" },
       { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
+      { url: "/favicon.ico", sizes: "48x48" },
     ],
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
   },

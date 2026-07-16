@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Fresh Cutz Barbers">
+  <title>Fresh Cutz</title>
+  <!--
+    An FC monogram that has been cut, and the lower half has slipped.
+    The site's whole idea is that the page gets cut as you scroll; the mark is
+    the same gesture held still. It is deliberately not a razor in a roundel —
+    every barber in Harrow has one of those, and the old logo was one.
+
+    Every glyph is a PATH, not <text>. An SVG referenced from <img src> is an
+    isolated document: it cannot see Oswald or Bebas from next/font, so any
+    font-family here would silently fall back to whatever the viewer has
+    installed. Drawn shapes render identically everywhere, including in the
+    favicon, where no page fonts exist at all.
+
+    Legibility is sized for the smallest real use: the nav renders this at 32px
+    in a circle. Two letterforms survive that; a wordmark would not.
+  -->
+  <defs>
+    <linearGradient id="b" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E7CE6E"/>
+      <stop offset="1" stop-color="#C7A83B"/>
+    </linearGradient>
+    <!-- The two halves are defined by the SAME diagonal, so they read as one
+         mark severed rather than two shapes that happen to sit apart. -->
+    <clipPath id="above"><path d="M0 0 L512 0 L512 236 L0 292 Z"/></clipPath>
+    <clipPath id="below"><path d="M0 292 L512 236 L512 512 L0 512 Z"/></clipPath>
+  </defs>
+
+  <rect width="512" height="512" rx="104" fill="#14171C"/>
+  <circle cx="256" cy="256" r="212" fill="none" stroke="url(#b)" stroke-width="7" opacity=".38"/>
+
+  <!-- Upper half: sits still -->
+  <g clip-path="url(#above)">
+    <path d="M142 150 h116 v36 h-80 v50 h68 v36 h-68 v90 h-36 z" fill="url(#b)"/>
+    <path d="M370 196 a76 76 0 1 0 0 120" fill="none" stroke="url(#b)" stroke-width="36" stroke-linecap="butt"/>
+  </g>
+
+  <!-- Lower half: the same two glyphs, slipped along the cut -->
+  <g clip-path="url(#below)" transform="translate(19 13)">
+    <path d="M142 150 h116 v36 h-80 v50 h68 v36 h-68 v90 h-36 z" fill="url(#b)"/>
+    <path d="M370 196 a76 76 0 1 0 0 120" fill="none" stroke="url(#b)" stroke-width="36" stroke-linecap="butt"/>
+  </g>
+
+  <!-- The cut: dashed, like the blade path in the hero's scroll transition -->
+  <path d="M-10 294 L522 240" stroke="#E7CE6E" stroke-width="4" stroke-dasharray="15 10" opacity=".9"/>
+</svg>

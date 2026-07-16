@@ -3,54 +3,76 @@
 import { useRef } from "react";
 import { gsap, ScrollTrigger, useIsoLayoutEffect } from "@/lib/motion";
 import { useLoaderDone } from "./loader-gate";
-import { createShearPanels, shearApart, type ShearPanels } from "./shear";
+import {
+  createRiser,
+  createShearPanels,
+  tearOffsetAt,
+  SHEAR_CLEAR,
+  type Riser,
+  type ShearPanels,
+} from "./shear";
 
 /** Clipper teeth, drawn once. Even spacing across the blade's cutting edge. */
-const TEETH = Array.from({ length: 9 }, (_, i) => `M${32 + i * 4.5} 78 V85`).join(" ");
+const CLIPPER_TEETH = Array.from({ length: 9 }, (_, i) => `M${32 + i * 4.5} 78 V85`).join(" ");
+/** Comb teeth, pointing UP — the way it travels when it mends. */
+const COMB_TEETH = Array.from({ length: 13 }, (_, i) => `M${25 + i * 4.2} 58 V30`).join(" ");
 
 /**
- * THE signature moment — a VERTICAL cut.
+ * How far the page below starts down, as a % of the VIEWPORT, before it rises.
  *
- * You scroll down, so the blade travels down. That is the whole idea, and it is
- * why this is vertical rather than horizontal: a horizontal cut-line fights the
- * scroll axis — it plays *at* you while you scroll past it. A vertical one is
- * driven by the scroll, so the further you scroll the deeper the cut goes, and
- * the gesture becomes cause-and-effect you can feel in your fingers rather than
- * an animation that happened to fire. The hero then parts left and right and the
- * marquee is behind it.
+ * Applied as a pixel `y` off the cached viewport height rather than `yPercent`:
+ * yPercent resolves against the riser's own height, which is however many
+ * sibling sections it took to fill the screen — so the same 15 would mean a
+ * different distance on a page with a taller next section, and the constant
+ * would be lying about its own units.
+ */
+const RISE = 15;
+
+/**
+ * THE signature moment — a VERTICAL cut, fused to the scroll in both directions.
+ *
+ * ONE PROGRESS DRIVES EVERYTHING. This is the whole design, and the first
+ * version got it wrong: it drew the line on scrub and then fired the halves
+ * apart as a one-shot when the draw finished. Two beats. The user's read was
+ * exact — "the pages don't go to side until I scroll and reach down". A cut that
+ * plays *at* you is an animation; a cut where every property hangs off the same
+ * number is something you are doing. At progress 0.3 the blade is 30% down, the
+ * halves are 30% apart, the page below is 30% risen and 30% brightened. Always,
+ * and only, together.
+ *
+ * `ease: "none"` everywhere, and nothing is a timeline. Any easing desyncs a
+ * property from the finger; any one-shot breaks the reverse.
+ *
+ * TWO TOOLS, ONE SEAM. Scroll down and a clipper cuts the page apart. Scroll up
+ * and a COMB travels back up the same seam and the halves knit together behind
+ * it. A barber's comb is the tool that puts hair back — it is already this
+ * site's motif (the dividers, <CombWipe />), so the hero borrows the vocabulary
+ * rather than inventing a prop the trade doesn't own. The tear is the same
+ * polyline on both facing edges, so the halves visibly *fit back together*
+ * rather than merely approaching each other: the payoff of both halves sharing
+ * one offsets array.
+ *
+ * REVERSING IS FREE, AND THAT IS THE POINT OF PURE SCRUB. Nothing here fires at
+ * a threshold, so progress running 1→0 plays the entire thing backwards on its
+ * own — halves rejoin, gap closes, the page below retreats and re-darkens. The
+ * old one-shot is exactly why scrolling up used to throw it all away.
  *
  * IT MUST NOT REPEAT THE PRELOADER. The loader already does scissors + a
- * horizontal shear before the site opens; doing the same beat again on scroll
- * devalues both. Same shop, different tool, different axis:
+ * horizontal shear before the site opens. Same shop, different tool, different
+ * axis:
  *
  *   preloader : scissors, blades ROTATING open/shut, cut ACROSS, halves up/down,
- *               straight edge, timeline-driven.
- *   here      : clipper, blade VIBRATING side to side, cut DOWN, halves
- *               left/right, TORN edge, scroll-driven.
+ *               straight edge, timeline-driven, one direction.
+ *   here      : clipper/comb, blade VIBRATING, cut DOWN, halves left/right,
+ *               TORN edge, scroll-driven, reversible.
  *
- * The clipper is the right tool for a downward cut — scissors travelling
- * point-first down a line read as a knife, and a barber's clipper is the thing
- * that actually moves in one long downward pass. Its blade vibrates rather than
- * snips, which is both true to the tool and instantly distinct from the loader.
- *
- * SCROLL RANGE — `start: "bottom bottom-=1"`, `end: "bottom top"`. Shared with
- * <ShearSplit />, and derived rather than tuned:
- *
- * The freeze must last exactly one viewport of scroll. `bottom bottom` is the
- * last moment the section still fills the screen on its own, and `bottom top` is
- * the first moment it is entirely gone — between them the copy is a seamless
- * stand-in with nothing else on screen to pop, and the range is exactly the
- * scroll the section would have taken to leave anyway. It adds nothing and hides
- * nothing. Anchoring on the section's *top* instead would work for a 100svh hero
- * and freeze a `.sec` taller than the viewport for its whole height.
- *
- * The `-=1` keeps it off scroll 0: for a hero exactly one viewport tall
- * `bottom bottom` IS scroll 0, and a trigger already past its start at load
- * would freeze a copy over the intro.
- *
- * `bottom top` is also what makes the reveal real: at progress 1 the marquee is
- * at the top of the viewport, so the halves part onto the live page rather than
- * a reconstruction of it.
+ * SCROLL RANGE — `start: "bottom bottom-=1"`, `end: "bottom top"`. Derived, not
+ * tuned. The cut must complete in exactly the scroll the hero would have taken
+ * to leave: `bottom bottom` is the last moment the hero fills the screen alone,
+ * `bottom top` the first moment it is entirely gone. It adds no scroll and hides
+ * none, it can't finish early into dead scroll, and it can't still be cutting
+ * once the next section is up. The `-=1` keeps it off scroll 0, where a trigger
+ * already past its start would freeze a copy over the intro.
  */
 export function CutTransition({ source = "#top" }: { source?: string }) {
   const root = useRef<HTMLDivElement>(null);
@@ -63,16 +85,14 @@ export function CutTransition({ source = "#top" }: { source?: string }) {
 
     const mm = gsap.matchMedia();
 
-    // Reduced motion gets no branch at all: no copy, no trigger, and the hero
-    // scrolls out normally. That IS the final state — the cut is decoration
-    // between two sections already in the right places without it.
+    // Reduced motion gets no branch at all: no copy, no riser, no trigger, and
+    // the hero scrolls out normally in both directions. That IS the final state.
     //
     // The cut IS kept at 390px, against the suggestion to degrade it to a fade.
     // A vertical cut needs height, not width, and the halves part sideways off a
     // narrow screen more dramatically than on a wide one — this is the strongest
     // the moment ever looks, on the devices most of this shop's traffic uses.
-    // The only thing that doesn't survive is the 92px clipper, and that is a CSS
-    // scale (see `.cut-clipper` in globals.css), not a reason to drop the cut.
+    // Only the 92px tool doesn't survive, and that is a CSS scale.
     mm.add("(prefers-reduced-motion: no-preference)", () => {
       const hero = document.querySelector<HTMLElement>(source);
       const overlay = root.current;
@@ -80,27 +100,51 @@ export function CutTransition({ source = "#top" }: { source?: string }) {
 
       // Scoped to the overlay, never selector strings: <Preloader /> leaves its
       // own `.cut-line-inner` in the document (its timeline ends on
-      // display:none, not removal), so a global `.cut-line-inner` here would
-      // drive both this cut and the dead loader's.
+      // display:none, not removal), so a global selector would drive both this
+      // cut and the dead loader's.
       const lineInner = overlay.querySelector<HTMLElement>(".cut-line-inner");
-      const line = overlay.querySelector<HTMLElement>(".cut-line");
       const clipper = overlay.querySelector<HTMLElement>(".cut-clipper");
+      const comb = overlay.querySelector<HTMLElement>(".cut-comb");
       const blade = overlay.querySelector<SVGGElement>(".cut-blade");
-      if (!lineInner || !line || !clipper || !blade) return;
+      if (!lineInner || !clipper || !comb || !blade) return;
 
       let panels: ShearPanels | null = null;
+      let riser: Riser | null = null;
       let buzz: gsap.core.Tween | null = null;
-      let sheared = false;
-      // Cached on refresh rather than read per frame: the clipper travels the
-      // viewport's height, and ScrollTrigger already recomputes on resize, so
-      // this is the one place that number is allowed to come from.
+      let facing = 0;
+      // Cached on refresh rather than read per frame: the tool travels the
+      // viewport's height, and ScrollTrigger already recomputes on resize.
       let travel = window.innerHeight;
 
-      function unfreeze() {
+      function open() {
+        if (panels) return;
+        // Built here, not at mount: the copy must be of what is on screen at
+        // this instant. Rebuilt on re-entry from either side, so the effect is
+        // as reversible as the scrub that drives it.
+        riser = createRiser(hero!, { tone: "ink" });
+        panels = createShearPanels(hero!, { axis: "vertical" });
+        overlay!.dataset.cutting = "";
+        // GSAP owns the tools' transforms outright. Nothing centres them in CSS
+        // on purpose: GSAP parses an existing `translateX(-50%)` into its own
+        // channel and composes the two, which is the trap that stranded the h1
+        // 155px outside its mask (see lineMaskTween).
+        gsap.set([clipper, comb], { xPercent: -50 });
+        // The blade buzzes rather than snips — a clipper's edge vibrates. This
+        // is the loader's yoyo idiom on a different property, so the two tools
+        // read as the same shop and not the same animation. It is the one thing
+        // here that isn't scrubbed, because a real clipper's buzz doesn't care
+        // how fast you move it.
+        buzz = gsap.to(blade, { x: 1.1, duration: 0.05, repeat: -1, yoyo: true, ease: "none" });
+      }
+
+      function close() {
         panels?.destroy();
         panels = null;
+        riser?.destroy();
+        riser = null;
         buzz?.kill();
         buzz = null;
+        delete overlay!.dataset.cutting;
       }
 
       const trigger = ScrollTrigger.create({
@@ -109,83 +153,54 @@ export function CutTransition({ source = "#top" }: { source?: string }) {
         end: "bottom top",
         // `scrub: true`, never a number. Lenis already smooths the scroll
         // position ScrollTrigger reads, so a numeric scrub stacks a second lag
-        // and the blade visibly trails the page — which would break the one
-        // thing this effect is for. (Same call as <HeroParallax />.) Lenis
-        // drives native window scroll and ScrollTrigger reads it natively —
-        // there is deliberately no scrollerProxy.
+        // and the blade trails the finger — which would break the one thing this
+        // effect is for. Lenis drives native window scroll and ScrollTrigger
+        // reads it natively: no scrollerProxy, deliberately.
         scrub: true,
         onRefresh: () => {
           travel = window.innerHeight;
         },
-        onEnter: () => {
-          if (sheared || panels) return;
-          // Freeze here, not at mount: the copy must be of what is on screen at
-          // this instant.
-          panels = createShearPanels(hero, { axis: "vertical" });
-          overlay.dataset.cutting = "";
-          // GSAP owns the clipper's transform outright. Nothing centres it in
-          // CSS on purpose: GSAP parses an existing `translateX(-50%)` into its
-          // own channel and composes the two, which is exactly the trap that
-          // stranded the h1 155px outside its mask (see lineMaskTween).
-          gsap.set(clipper, { xPercent: -50 });
-          // The blade buzzes rather than snips — a clipper's cutting edge
-          // vibrates side to side. Tiny and fast, and killed the moment the cut
-          // lands. This is the loader's yoyo idiom on a different property, so
-          // the two tools read as the same shop and not the same animation.
-          buzz = gsap.to(blade, {
-            x: 1.1,
-            duration: 0.05,
-            repeat: -1,
-            yoyo: true,
-            ease: "none",
-          });
-        },
+        // Both edges, both directions: the cut exists whenever the hero is
+        // mid-exit, however the user got there.
+        onEnter: open,
+        onEnterBack: open,
+        onLeave: close,
+        onLeaveBack: close,
         onUpdate: (self) => {
-          if (sheared || !panels) return;
-          // Scrubbed straight off progress rather than through a timeline: two
-          // linear properties off one number, and a timeline would only add a
-          // layer to keep in sync with the same number.
+          if (!panels || !riser) return;
           const p = self.progress;
-          // The line grows downward (transform-origin: top) and the clipper
-          // rides its leading tip, so the blade is always exactly where the cut
-          // currently ends. That coupling is the effect.
+
+          // Swap the tool to match the direction of travel. Only on a change:
+          // this fires every frame, and both tools ride the same progress-
+          // derived y, so they can never desync or both be on screen.
+          if (self.direction !== facing) {
+            facing = self.direction;
+            gsap.set(clipper, { autoAlpha: facing === 1 ? 1 : 0 });
+            gsap.set(comb, { autoAlpha: facing === 1 ? 0 : 1 });
+          }
+
+          const y = p * travel;
+          // 1. cut depth — the seam drawn to wherever the tool has reached.
           gsap.set(lineInner, { scaleY: p });
-          gsap.set(clipper, { y: p * travel });
-        },
-        onLeave: () => {
-          // Progress 1: the hero is off-screen and the marquee is at the top of
-          // the viewport behind the halves. Part onto it.
-          if (sheared || !panels) return;
-          sheared = true;
-          const held = panels;
-          panels = null;
-          buzz?.kill();
-          buzz = null;
-          // The line and the clipper did the cut; the instant the halves start
-          // parting they'd otherwise hang over the section being revealed for
-          // the whole 0.9s. 0.2s reads as them leaving with the cut.
-          gsap.to([line, clipper], { opacity: 0, duration: 0.2 });
-          shearApart(held, {
-            onComplete: () => {
-              held.destroy();
-              overlay.style.display = "none";
-              // Once it has played it is dead weight on every subsequent scroll
-              // event. One-shot by contract.
-              trigger.kill();
-            },
-          });
-        },
-        // Scrolling back up before the cut lands unfreezes cleanly: the copy is
-        // dropped and the real hero is right there behind it, never modified.
-        onLeaveBack: () => {
-          if (sheared) return;
-          unfreeze();
-          delete overlay.dataset.cutting;
+          gsap.set(clipper, { y });
+          // The comb rides the torn edge instead of a straight line: its teeth
+          // catch the jags as it passes, because it samples the same polyline
+          // the edge was cut from. Damped so it tracks rather than wobbles.
+          gsap.set(comb, { y, x: tearOffsetAt(p) * 0.004 * travel });
+          // 2. half separation — off the same progress, linear, so the gap is
+          // exactly as open as the cut is deep. This is the fix.
+          gsap.set(panels.halves[0], { xPercent: -SHEAR_CLEAR * p });
+          gsap.set(panels.halves[1], { xPercent: SHEAR_CLEAR * p });
+          // 3 + 4. the page below rises and brightens into the gap, landing at
+          // exactly 0 / 0 at progress 1 — which is what makes the handoff to the
+          // real page invisible. See createRiser().
+          gsap.set(riser.inner, { y: (RISE / 100) * travel * (1 - p) });
+          gsap.set(riser.shade, { opacity: 1 - p });
         },
       });
 
       return () => {
-        unfreeze();
+        close();
         trigger.kill();
       };
     });
@@ -195,15 +210,16 @@ export function CutTransition({ source = "#top" }: { source?: string }) {
 
   return (
     // data-shear-exclude: this overlay is `position: fixed`, so if it ever ends
-    // up inside the subtree being cloned, shear.ts strips it — otherwise the
-    // copy's cut-line escapes the panel and repaints across the viewport.
+    // up inside a cloned subtree, shear.ts strips it — otherwise the copy's
+    // cut-line escapes the panel and repaints across the viewport.
     <div className="cut-overlay" ref={root} aria-hidden="true" data-shear-exclude>
       <div className="cut-line">
         <div className="cut-line-inner" />
       </div>
+
+      {/* Cutting, on the way down. Blade at the bottom — the leading edge. */}
       <div className="cut-clipper">
         <svg viewBox="0 0 100 100" fill="none">
-          {/* Body: the part you hold. Static — only the blade moves. */}
           <rect
             x="32"
             y="8"
@@ -215,8 +231,6 @@ export function CutTransition({ source = "#top" }: { source?: string }) {
             fill="#14171C"
           />
           <path d="M39 22 H61 M39 30 H61" stroke="#C7A83B" strokeWidth="2" strokeLinecap="round" />
-          {/* Blade: buzzes side to side. Brass-bright so the cutting edge is the
-              brightest thing on the tool, the way the light catches it. */}
           <g className="cut-blade">
             <path
               d="M28 66 H72 L68 78 H32 Z"
@@ -225,8 +239,26 @@ export function CutTransition({ source = "#top" }: { source?: string }) {
               strokeLinejoin="round"
               fill="#14171C"
             />
-            <path d={TEETH} stroke="#E7CE6E" strokeWidth="2" strokeLinecap="round" />
+            <path d={CLIPPER_TEETH} stroke="#E7CE6E" strokeWidth="2" strokeLinecap="round" />
           </g>
+        </svg>
+      </div>
+
+      {/* Mending, on the way up. Teeth point up — the leading edge, mirroring
+          the clipper's blade. Same silhouette language, opposite job. */}
+      <div className="cut-comb">
+        <svg viewBox="0 0 100 100" fill="none">
+          <rect
+            x="20"
+            y="58"
+            width="60"
+            height="13"
+            rx="3"
+            stroke="#C7A83B"
+            strokeWidth="3"
+            fill="#14171C"
+          />
+          <path d={COMB_TEETH} stroke="#E7CE6E" strokeWidth="2" strokeLinecap="round" />
         </svg>
       </div>
     </div>

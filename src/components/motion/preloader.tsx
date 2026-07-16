@@ -32,7 +32,7 @@ export function Preloader({ onDone }: { onDone: () => void }) {
     }
 
     const ctx = gsap.context(() => {
-      const counter = { v: 2015 };
+      const counter = { v: 2014 };
       const tl = gsap.timeline({
         defaults: { ease: "power3.out" },
         onComplete: () => {
@@ -103,7 +103,7 @@ export function Preloader({ onDone }: { onDone: () => void }) {
       <div className="loader-ticket">
         <div className="lt-label">Now Serving</div>
         <div className="lt-num" ref={num}>
-          2015
+          2014
         </div>
         <div className="lt-sub">Fresh Cutz · Wealdstone</div>
       </div>

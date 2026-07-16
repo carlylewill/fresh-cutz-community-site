@@ -45,7 +45,7 @@ export function Nav() {
     >
       <a className="flex items-center gap-3" href="#top">
         <Image
-          src="/logo.png"
+          src="/logo.svg"
           alt="Fresh Cutz logo"
           width={38}
           height={38}

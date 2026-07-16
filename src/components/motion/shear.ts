@@ -65,20 +65,57 @@ export type ShearPanels = {
  * that decide whether the edge reads as torn paper or as broken CSS, and they
  * want to be looked at and tuned, not re-rolled differently on every mount.
  *
- * Amplitude is deliberately about 1% — ~14px at 1440, ~4px at 390. A hint reads
- * as paper. Anything more reads as a mistake, and at h1 sizes a big jag starts
- * eating glyphs.
+ * Amplitude is ~2.4% — ~35px at 1440, ~9px at 390. The first pass was half this
+ * and it was the right instinct for a STATIC edge: at rest, subtle reads as
+ * paper and loud reads as a mistake. But this edge is never seen at rest. It is
+ * only on screen while the two halves are travelling apart, and a 14px jag on a
+ * moving edge is invisible — the user's note that the edges didn't look torn was
+ * simply correct. An edge that moves has to be drawn louder than one that
+ * doesn't.
  *
  * The SAME array drives both halves, which is the whole trick: the left half's
  * right edge and the right half's left edge are the same polyline, so at rest
  * they interlock perfectly with no seam and no overlap. Two independent
  * jitters would show a ragged gap before the shear ever started.
  */
-const TEAR = [0, 0.9, -0.6, 1.2, -0.4, 0.7, -1.1, 0.5, -0.8, 1.0, -0.3, 0.8, -0.9, 0.4, 0];
+/*
+ * Amplitude raised again (max 2.4% -> 4.2%) — the previous pass was still
+ * reading as "wobbly" rather than "torn". Deliberately angular rather than
+ * wave-like: consecutive entries swing across the centre line instead of
+ * drifting around it, because a blade leaves facets, not ripples.
+ *
+ * First and last are pinned to 0 so the cut meets the top and bottom edges
+ * exactly — a non-zero endpoint would leave a notch at the viewport edge where
+ * the two halves fail to meet.
+ */
+const TEAR = [0, 3.2, -2.1, 4.2, -1.6, 2.6, -3.9, 1.8, -3.0, 3.5, -1.1, 2.8, -3.3, 1.4, 0];
+
+/**
+ * How far a vertical half must travel (in % of its own width) to fully clear the
+ * viewport: 50% for its share of the screen, plus the tear's worst outward
+ * excursion, plus a hair of margin. Derived from TEAR rather than guessed —
+ * raise the tear and this follows, instead of leaving a sliver of hero parked at
+ * the screen edge.
+ */
+export const SHEAR_CLEAR = 50 + Math.max(...TEAR.map(Math.abs)) + 1.5;
 
 /** The torn centre line as [x%, y%] points, top to bottom. */
 function tearEdge(): Array<[number, number]> {
   return TEAR.map((dx, i) => [50 + dx, (i / (TEAR.length - 1)) * 100]);
+}
+
+/**
+ * The tear's horizontal offset (in % of width) at `t` down the seam, 0..1,
+ * linearly interpolated between the authored points.
+ *
+ * Lets a tool riding the seam track the edge it is working rather than float
+ * down a straight line beside it — the comb's teeth catch the torn edge as they
+ * pass, because they are reading the same polyline the edge was cut from.
+ */
+export function tearOffsetAt(t: number): number {
+  const span = (TEAR.length - 1) * Math.min(Math.max(t, 0), 1);
+  const i = Math.min(Math.floor(span), TEAR.length - 2);
+  return TEAR[i] + (TEAR[i + 1] - TEAR[i]) * (span - i);
 }
 
 function tearClipPaths(): { left: string; right: string } {
@@ -189,6 +226,88 @@ export function createShearPanels(
     axis,
     destroy: () => halves.forEach((el) => el.remove()),
   };
+}
+
+export type Riser = {
+  /** Transform this to make the page below rise. */
+  readonly inner: HTMLElement;
+  /** Fade this out to brighten it. */
+  readonly shade: HTMLElement;
+  readonly destroy: () => void;
+};
+
+/**
+ * THE PAGE BELOW, rising behind the gap.
+ *
+ * This exists because fusing the cut into one scrubbed progress broke something
+ * the phased version hid. The halves used to part only at progress 1, by which
+ * point the hero had scrolled away and the marquee was really sitting at the top
+ * of the viewport — so the gap revealed the live page and needed no help. Once
+ * the halves start parting at progress 0.1, the gap opens onto what is ACTUALLY
+ * behind the hero at 10% scroll: the hero itself, still in the flow, 90% of it
+ * still filling the screen. Hide it and the gap is a 900px ink void instead.
+ *
+ * So the thing the gap opens onto has to be built: an opaque, fixed stand-in for
+ * the page below, which rises and brightens on the same progress as everything
+ * else. It is the answer to "the part below should simultaneously keep coming up
+ * too" — not decoration on top of the reveal, but the only reason there is
+ * anything to reveal.
+ *
+ * THE HANDOFF IS THE WHOLE CONTRACT. At progress 1 this is destroyed and the
+ * real page takes over mid-scroll, so at progress 1 it must be pixel-identical
+ * to the real thing: `inner` at yPercent 0 and `shade` at opacity 0 reproduce
+ * the real page at exactly the scroll offset where the range ends (the hero's
+ * bottom on the viewport's top). Any easing on either would land them somewhere
+ * other than 0 at the moment of the swap, and the page would jump.
+ */
+export function createRiser(
+  after: HTMLElement,
+  { tone = "ink" }: { tone?: ShearTone } = {},
+): Riser {
+  const riser = document.createElement("div");
+  riser.className = "cut-riser";
+  riser.dataset.tone = tone;
+  riser.setAttribute("aria-hidden", "true");
+
+  const inner = document.createElement("div");
+  inner.className = "cut-riser-inner";
+  inner.style.width = `${after.getBoundingClientRect().width}px`;
+
+  // Enough siblings to fill the screen once, and no more. Cloning to the end of
+  // the document would copy the whole page to show one viewport of it.
+  let filled = 0;
+  let next = after.nextElementSibling;
+  while (next && filled < window.innerHeight * 1.2) {
+    const copy = next.cloneNode(true) as HTMLElement;
+    prepareClone(copy);
+    settleReveals(copy);
+    inner.appendChild(copy);
+    filled += (next as HTMLElement).offsetHeight;
+    next = next.nextElementSibling;
+  }
+
+  const shade = document.createElement("div");
+  shade.className = "cut-riser-shade";
+
+  riser.append(inner, shade);
+  document.body.appendChild(riser);
+
+  return { inner, shade, destroy: () => riser.remove() };
+}
+
+/**
+ * A copy is a snapshot, and a snapshot of an unrevealed section is a picture of
+ * nothing: `.reveal[data-batch]` is `opacity: 0` in CSS until its own
+ * ScrollTrigger fires, and a clone never gets one. Meanwhile the REAL section's
+ * triggers do fire during the hero's scroll, so by the handoff the real page is
+ * revealed and an untouched copy would pop from empty to full at progress 1.
+ * Forcing the copy to the revealed state is what makes the swap invisible.
+ */
+function settleReveals(clone: HTMLElement) {
+  clone.querySelectorAll<HTMLElement>(".reveal").forEach((el) => {
+    el.style.opacity = "1";
+    el.style.transform = "none";
+  });
 }
 
 /**

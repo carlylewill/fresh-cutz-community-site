@@ -7,12 +7,12 @@ const TITLE = "Fresh Cutz Barbers | Barber in Wealdstone, Harrow — All Hair Ty
 export const metadata: Metadata = {
   title: TITLE,
   description:
-    "Barber in Wealdstone, Harrow. Afro, Asian & Caucasian hair specialists. 10+ years cutting the community. Book with Baggio or Rahul.",
+    "Barber in Wealdstone, Harrow. Afro, Asian & Caucasian hair specialists. 12 years cutting the community. Book with Baggio or Rahul.",
   alternates: { canonical: "https://freshcutzbarber.co/" },
   openGraph: {
     title: TITLE,
     description:
-      "Afro, Asian & Caucasian hair specialists in Wealdstone, Harrow. 10+ years, patient and precise.",
+      "Afro, Asian & Caucasian hair specialists in Wealdstone, Harrow. 12 years, patient and precise.",
     url: "https://freshcutzbarber.co/",
   },
 };

@@ -7,7 +7,7 @@ const ITEMS = [
   "Kids' First Cuts",
   "Hot Towel Shaves",
   "Walk-ins Welcome",
-  "Est. 2015",
+  "Est. 2014",
   "Wealdstone · Harrow",
 ];
 

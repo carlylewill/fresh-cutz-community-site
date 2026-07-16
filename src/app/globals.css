@@ -199,36 +199,99 @@ html[data-loader="play"] .hero-line > span {
   background: repeating-linear-gradient(180deg, var(--color-brass) 0 8px, transparent 8px 16px);
 }
 
-/* The clipper. `left`/`top` only — no transform here on purpose: GSAP owns this
-   element's transform outright, and a `translateX(-50%)` in CSS would be parsed
+/* The tools. `left`/`top` only — no transform here on purpose: GSAP owns these
+   elements' transforms outright, and a `translateX(-50%)` in CSS would be parsed
    into GSAP's own channel and composed with it. That is precisely the trap that
-   stranded the h1 155px outside its mask (see lineMaskTween). It centres itself
-   with xPercent instead. `top: -66px` puts the blade's cutting edge on the
-   line's leading tip at y=0, so the tool sits where the cut actually is. */
-.cut-overlay .cut-clipper {
+   stranded the h1 155px outside its mask (see lineMaskTween). They centre
+   themselves with xPercent instead.
+
+   The clipper cuts on the way down; the comb mends on the way up. Only one is
+   ever visible (autoAlpha, by scroll direction) and both ride the same
+   progress-derived y, so they cannot desync. Each `top` offset puts that tool's
+   LEADING edge — the clipper's blade, the comb's teeth — on the seam's tip at
+   y=0, so whichever is travelling sits exactly where the work is. */
+.cut-overlay .cut-clipper,
+.cut-overlay .cut-comb {
   position: absolute;
   z-index: 4;
-  top: -66px;
   left: var(--cut-x);
   width: 92px;
   height: 92px;
+}
+.cut-overlay .cut-clipper {
+  top: -66px;
   /* The bloom at the blade. Same exception and same reasoning as `.cut-line`:
      one small element, set once, never animated. */
   filter: drop-shadow(0 0 9px rgba(231, 206, 110, 0.45));
 }
-.cut-overlay .cut-clipper svg {
+.cut-overlay .cut-comb {
+  /* Teeth reach to y=30 of a 92px box, so -30 lands them on the tip. */
+  top: -30px;
+  filter: drop-shadow(0 0 9px rgba(231, 206, 110, 0.45));
+  /* Hidden until the first upward scroll claims it. autoAlpha writes both
+     visibility and opacity, so it costs nothing while it waits. */
+  visibility: hidden;
+  opacity: 0;
+}
+.cut-overlay .cut-clipper svg,
+.cut-overlay .cut-comb svg {
   width: 100%;
   height: 100%;
   overflow: visible;
 }
 /* At 390px a 92px tool is a third of the screen. The cut itself stays — it needs
-   height, not width — but the clipper comes down to match. */
+   height, not width — but the tools come down to match. */
 @media (max-width: 640px) {
-  .cut-overlay .cut-clipper {
+  .cut-overlay .cut-clipper,
+  .cut-overlay .cut-comb {
     width: 62px;
     height: 62px;
+  }
+  .cut-overlay .cut-clipper {
     top: -45px;
   }
+  .cut-overlay .cut-comb {
+    top: -20px;
+  }
+}
+
+/* ---------- the page below, rising into the gap ----------
+   An opaque, fixed stand-in for the sections under the hero. It exists because
+   the fused cut opens the gap from progress 0, and what is genuinely behind the
+   hero at 10% scroll is the hero itself — so the gap would open onto a void.
+   See createRiser() in motion/shear.ts.
+
+   Sits below `.shear-panel` (40) so the halves hide it until they part, and
+   opaque so the real page scrolling underneath never shows through. */
+.cut-riser {
+  position: fixed;
+  inset: 0;
+  z-index: 39;
+  pointer-events: none;
+  overflow: hidden;
+}
+.cut-riser[data-tone="ink"] {
+  background: var(--color-ink);
+}
+.cut-riser[data-tone="ink-deep"] {
+  background: var(--color-ink-deep);
+}
+.cut-riser-inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+/* The brightness. An ink panel fading out, NOT `filter: brightness()` on the
+   riser: a filter re-rasterises the entire subtree every frame it changes —
+   here that is a full viewport of cloned sections and images, per frame, while
+   the user is scrolling. An opacity change on one absolutely-positioned solid
+   panel is a compositor operation on a single layer. Same picture, and the only
+   version that holds 60fps on a throttled phone. */
+.cut-riser-shade {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: var(--color-ink);
 }
 
 /* ---------- the shear ----------
@@ -442,6 +505,7 @@ html[data-loader="play"] .hero-line > span {
      stale node from a live setting change can't be left over the page. */
   .cut-overlay,
   .shear-panel,
+  .cut-riser,
   .comb-wipe {
     display: none !important;
   }

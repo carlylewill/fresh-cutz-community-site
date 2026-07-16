@@ -22,7 +22,7 @@ export function Hero() {
 
       <div className="relative z-2 max-w-[1200px]">
         <div className="eyebrow hero-eyebrow reveal" data-anim="fade">
-          Barber · Wealdstone, Harrow · Est. 2015
+          Barber · Wealdstone, Harrow · Est. 2014
         </div>
 
         {/*
@@ -88,7 +88,7 @@ export function Hero() {
             />{" "}
             Google reviews
             <br />
-            Trusted by regulars for 10+ years
+            Trusted by regulars for 12 years
           </div>
 
           <OpenStatusBadge />
