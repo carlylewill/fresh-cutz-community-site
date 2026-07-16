@@ -61,7 +61,10 @@
   filter: drop-shadow(0 0 6px rgba(199, 168, 59, 0.75));
 }
 
-@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+/* Only reduced motion hides it now. Coarse pointers DO get the flourish — it
+   runs once on scroll-into-view (see the (pointer: coarse) branch in
+   ticket-snip.tsx) rather than on hover. */
+@media (prefers-reduced-motion: reduce) {
   .tk-fx {
     display: none !important;
   }

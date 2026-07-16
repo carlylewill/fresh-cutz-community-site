@@ -1,6 +1,6 @@
 "use client";
 
-import { gsap, useIsoLayoutEffect } from "@/lib/motion";
+import { gsap, ScrollTrigger, useIsoLayoutEffect } from "@/lib/motion";
 import "./flourish.css";
 
 /**
@@ -350,6 +350,58 @@ export function TicketSnip() {
         });
         // The markup is ours; leaving it behind would strand transformed nodes
         // if reduced motion is switched on mid-session.
+        document.querySelectorAll(".tk-fx").forEach((n) => n.remove());
+      };
+    });
+
+    /**
+     * Touch has no hover, so the flourish would never fire on a phone — the
+     * user rightly noticed the cards were dead there. Instead, each card runs a
+     * single cut lap when it scrolls into view: the tool travels the border once
+     * and the dashed cut draws behind it, then settles. One-shot, not a loop, so
+     * it reads as the card being cut open as it arrives rather than idling.
+     */
+    mm.add("(pointer: coarse) and (prefers-reduced-motion: no-preference)", () => {
+      const all = [
+        ...gsap.utils.toArray<HTMLElement>(".ticket").map((c) => ({ card: c, barber: false })),
+        ...gsap.utils.toArray<HTMLElement>(".barber").map((c) => ({ card: c, barber: true })),
+      ];
+      const triggers: ScrollTrigger[] = [];
+
+      all.forEach(({ card, barber }) => {
+        const isRazor = barber && card.dataset.tool === "razor";
+        card.insertAdjacentHTML("beforeend", barber ? barberFx(isRazor) : FX);
+        const fx = card.querySelector<HTMLElement>(".tk-fx")!;
+        const cut = fx.querySelector<SVGRectElement>(".tk-cut")!;
+        const tool = fx.querySelector<HTMLElement>(".tk-tool")!;
+        const p = { t: 0 };
+
+        const tl = gsap
+          .timeline({ paused: true })
+          .set(tool, { opacity: 1 })
+          .to(p, {
+            t: 1,
+            duration: 1.5,
+            ease: "power1.inOut",
+            onUpdate: () => {
+              placeOnPerimeter(tool, card, p.t);
+              gsap.set(cut, { strokeDashoffset: 100 - p.t * 100 });
+            },
+          })
+          .to(tool, { opacity: 0, duration: 0.25 }, ">-0.1");
+
+        triggers.push(
+          ScrollTrigger.create({
+            trigger: card,
+            start: "top 82%",
+            once: true,
+            onEnter: () => tl.play(),
+          }),
+        );
+      });
+
+      return () => {
+        triggers.forEach((t) => t.kill());
         document.querySelectorAll(".tk-fx").forEach((n) => n.remove());
       };
     });

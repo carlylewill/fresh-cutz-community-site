@@ -26,7 +26,7 @@ const REVIEWS = [
 const STATS: { to: number; decimals?: number; label: string }[] = [
   { to: Number(RATING), decimals: 1, label: "Google rating" },
   { to: Number(REVIEW_COUNT), label: "Reviews" },
-  { to: 10, label: "Years+ in Wealdstone" },
+  { to: 12, label: "Years in Wealdstone" },
 ];
 
 export function Reviews() {

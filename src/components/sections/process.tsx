@@ -413,7 +413,9 @@ export function Process() {
                  * fetches it and a phone never fetches a clip.
                  */}
                 {!playable ? (
-                  <div className="ring-line relative mb-6 aspect-[9/16] w-full max-w-[220px] overflow-hidden rounded-md bg-black/40 ring-1">
+                  // Centred, and larger on the stacked path — it was left-aligned
+                  // at 220px with a wide black gutter to its right on a phone.
+                  <div className="ring-line relative mx-auto mb-6 aspect-[9/16] w-full max-w-[300px] overflow-hidden rounded-md bg-black/40 ring-1">
                     <Image
                       src={b.still.src}
                       alt={b.alt}
@@ -425,7 +427,7 @@ export function Process() {
                   </div>
                 ) : null}
 
-                <p className="font-ticket text-brass text-3xl tracking-[0.08em]">{b.time}</p>
+                <p className="font-ticket text-brass mt-2 text-3xl tracking-[0.08em]">{b.time}</p>
                 {/* The step name lives in the rail on desktop; the rail is gone
                     on the stacked path, so it comes back here instead. */}
                 <p className="font-mono text-steel mt-1 text-[10.5px] tracking-[0.2em] uppercase motion-safe:md:hidden">

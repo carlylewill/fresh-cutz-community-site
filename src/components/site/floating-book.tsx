@@ -11,7 +11,11 @@ import { Magnetic } from "@/components/motion/magnetic";
  */
 export function FloatingBook() {
   return (
-    <div className="fixed right-5 bottom-5 z-[60]">
+    // Hidden below 768px: on a phone it sat over the section content (it covered
+    // the Process copy and the review card) and the sticky nav already carries a
+    // "Book a Chair" CTA, so a second fixed one is redundant there. Desktop keeps
+    // it — there's room in the margin and the magnetic pull is a nice touch.
+    <div className="fixed right-5 bottom-5 z-[60] hidden md:block">
       <Magnetic>
         <a className="btn-primary" href="#book">
           <i className="sweep" aria-hidden />
