@@ -70,7 +70,7 @@ export function Services() {
                 </div>
                 <a
                   href="#book"
-                  className="font-mono border-line text-paper hover:border-brass hover:text-brass-bright rounded-xs border px-3.5 py-2.5 text-[11px] tracking-[0.14em] uppercase transition-all duration-250"
+                  className="font-mono border-line text-paper hover:border-brass hover:text-brass-bright inline-flex min-h-[44px] items-center rounded-xs border px-3.5 py-2.5 text-[11px] tracking-[0.14em] uppercase transition-all duration-250"
                 >
                   Add to booking
                 </a>

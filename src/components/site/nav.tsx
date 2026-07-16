@@ -43,7 +43,7 @@ export function Nav() {
           : { background: "linear-gradient(rgba(14,16,20,.85), rgba(14,16,20,0))" }
       }
     >
-      <a className="flex items-center gap-3" href="#top">
+      <a className="flex min-h-[44px] items-center gap-3" href="#top">
         <Image
           src="/logo.svg"
           alt="Fresh Cutz logo"
@@ -69,7 +69,7 @@ export function Nav() {
       </div>
 
       <a
-        className="font-display text-ink bg-brass hover:bg-brass-bright rounded-xs px-[22px] py-3 text-xs font-semibold tracking-[0.22em] uppercase transition-colors duration-250"
+        className="font-display text-ink bg-brass hover:bg-brass-bright inline-flex min-h-[44px] items-center rounded-xs px-[22px] py-3 text-xs font-semibold tracking-[0.22em] uppercase transition-colors duration-250"
         href="#book"
       >
         Book a Chair
