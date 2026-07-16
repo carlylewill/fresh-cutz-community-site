@@ -36,17 +36,12 @@
   --radius-lg: 8px;
 
   --ease-shear: cubic-bezier(0.22, 1, 0.36, 1);
-
-  --animate-marquee: marquee 26s linear infinite;
-  @keyframes marquee {
-    from {
-      transform: translateX(0);
-    }
-    to {
-      transform: translateX(-50%);
-    }
-  }
 }
+
+/* `--animate-marquee` and its @keyframes are deliberately gone: <Marquee /> is
+   now a GSAP tween (xPercent -50, 26s, repeat -1) so the strip can respond to
+   scroll velocity. Leaving the keyframe here would be a second, silent driver
+   for the same transform. The 26s lives in marquee.tsx now. */
 
 @layer base {
   * {
@@ -115,15 +110,194 @@ html[data-loader="skip"] #loader {
 html[data-loader="skip"] .hero-line > span {
   transform: none;
 }
+/* -110%: the line drops in from above its mask. Everything on this page falls
+   into place rather than rising into it — see the note on TRAVEL in
+   motion/reveal.tsx. Must stay in step with lineMaskTween()'s from-state. */
 html[data-loader="play"] .hero-line > span {
-  transform: translateY(110%);
+  transform: translateY(-110%);
 }
 
 /* Batched reveals get their from-state from CSS: ScrollTrigger.batch has no
-   fromTo, so without this they render at final position and never animate. */
+   fromTo, so without this they render at final position and never animate.
+   Negative Y for the same reason as TRAVEL — the cards fall in. */
 .reveal[data-batch] {
   opacity: 0;
-  transform: translateY(44px);
+  transform: translateY(-44px);
+}
+
+/* ---------- h2 line masks ----------
+   The section-heading half of the hero's `.hero-line` contract. Same structure,
+   same reason it's global: <ScrollReveals /> binds every one of these in a
+   single pass, and where a headline breaks is art direction the section owns.
+
+   No from-state here, deliberately, unlike `.hero-line`: the h1 paints before
+   its JS runs so it has to be armed in CSS, but every h2 is below the fold, and
+   lineMaskTween's fromTo arms them at hydration long before they're scrolled to.
+   Arming them here instead would mean a JS failure leaves every heading on the
+   page permanently invisible. */
+.line-mask {
+  display: block;
+  overflow: hidden;
+}
+.line-mask > span {
+  display: inline-block;
+}
+
+/* ---------- the cut ----------
+   The preloader cuts ACROSS to open the site. This one cuts DOWN, because the
+   user scrolls down and the blade should follow the finger — see the header of
+   motion/cut-transition.tsx. Two different cuts, same shop, no repetition.
+
+   --cut-y is the loader's horizontal line (and <ShearSplit />'s).
+   --cut-x is this one's vertical line. Each is the single number that keeps the
+   blade's path and the shear's edge on top of each other. Change it once. */
+:root {
+  --cut-y: 50%;
+  --cut-x: 50%;
+}
+
+.cut-overlay {
+  position: fixed;
+  inset: 0;
+  /* Above `.shear-panel` (40), below the nav (60) and the floating CTA (60):
+     the cut is drawn over the frozen hero, but it never covers the chrome. */
+  z-index: 41;
+  pointer-events: none;
+  visibility: hidden;
+}
+.cut-overlay[data-cutting] {
+  visibility: visible;
+}
+
+/* The VERTICAL cut-line. The preloader's `.cut-line` is a 1px-tall row that
+   reveals left-to-right; this is its 90°-rotated twin — a 1px-wide column that
+   reveals top-to-bottom. Same trick, same reason: the outer clips and the inner
+   scales, so the dashes are revealed rather than stretched. Scaling the gradient
+   itself would smear the dashes down the screen. */
+.cut-overlay .cut-line {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: var(--cut-x);
+  width: 1px;
+  height: 100%;
+  overflow: hidden;
+  opacity: 0.9;
+  /* DOCUMENTED EXCEPTION to transform/opacity-only: drop-shadow, for the brass
+     glow along the cut. Scoped to one 1px-wide element — the filter region is a
+     sliver, so this is a rounding error next to filtering a section. It is set
+     once and never animated; the line's own scaleY is what moves. Brass on ink
+     at 55%: a hot edge where the blade has passed, not neon. */
+  filter: drop-shadow(0 0 5px rgba(199, 168, 59, 0.55));
+}
+.cut-overlay .cut-line-inner {
+  height: 100%;
+  width: 100%;
+  transform: scaleY(0);
+  transform-origin: center top;
+  /* 180deg, not 90deg: the dashes run down the line rather than across it. */
+  background: repeating-linear-gradient(180deg, var(--color-brass) 0 8px, transparent 8px 16px);
+}
+
+/* The clipper. `left`/`top` only — no transform here on purpose: GSAP owns this
+   element's transform outright, and a `translateX(-50%)` in CSS would be parsed
+   into GSAP's own channel and composed with it. That is precisely the trap that
+   stranded the h1 155px outside its mask (see lineMaskTween). It centres itself
+   with xPercent instead. `top: -66px` puts the blade's cutting edge on the
+   line's leading tip at y=0, so the tool sits where the cut actually is. */
+.cut-overlay .cut-clipper {
+  position: absolute;
+  z-index: 4;
+  top: -66px;
+  left: var(--cut-x);
+  width: 92px;
+  height: 92px;
+  /* The bloom at the blade. Same exception and same reasoning as `.cut-line`:
+     one small element, set once, never animated. */
+  filter: drop-shadow(0 0 9px rgba(231, 206, 110, 0.45));
+}
+.cut-overlay .cut-clipper svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+/* At 390px a 92px tool is a third of the screen. The cut itself stays — it needs
+   height, not width — but the clipper comes down to match. */
+@media (max-width: 640px) {
+  .cut-overlay .cut-clipper {
+    width: 62px;
+    height: 62px;
+    top: -45px;
+  }
+}
+
+/* ---------- the shear ----------
+   Fixed, opaque stand-ins for a section while the real page scrolls behind them.
+   Opaque is not a style choice: the whole mechanism is that the page keeps
+   moving underneath, so anything showing through is the illusion breaking. See
+   the header comment in motion/shear.ts. */
+.shear-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  overflow: hidden;
+}
+.shear-panel[data-tone="ink"] {
+  background: var(--color-ink);
+}
+.shear-panel[data-tone="ink-deep"] {
+  background: var(--color-ink-deep);
+}
+/* DOCUMENTED EXCEPTION to transform/opacity-only: clip-path. Set once per panel
+   and never tweened — the halves are static clips that then move on
+   xPercent/yPercent alone. It is composited and layout-free, which is why it
+   beats the alternative (wrappers with overflow:hidden and the copy offset
+   inside) for something that has to hold 60fps mid-scroll.
+
+   HORIZONTAL halves — <ShearSplit />. A straight edge on --cut-y, matching the
+   loader's cut. */
+.shear-panel-top {
+  clip-path: inset(0 0 calc(100% - var(--cut-y)) 0);
+  border-bottom: 1px solid var(--color-line);
+}
+.shear-panel-bot {
+  clip-path: inset(var(--cut-y) 0 0 0);
+}
+
+/* VERTICAL halves — <CutTransition />. Deliberately absent: these are TORN, and
+   a torn edge is 15 computed points that both halves must share exactly, so
+   shear.ts sets the polygon inline. See TEAR there for why the jitter is
+   hand-authored and shared rather than generated per panel. Background comes
+   from [data-tone] above, same as the horizontal pair. */
+.shear-clone {
+  position: absolute;
+  /* Geometry comes from the source's getBoundingClientRect() at freeze time —
+     see createShearPanels(). */
+}
+
+/* ---------- the comb wipe ----------
+   One opaque band per comb tooth, retracting upward as the divider crosses.
+   Transforms only: see the note in motion/comb.tsx for why this beats a striped
+   mask-image or a clip-path polygon. */
+.comb-wipe {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 100vh;
+  z-index: 2;
+  pointer-events: none;
+  display: flex;
+}
+.comb-band {
+  flex: 1;
+  background: var(--color-ink-deep);
+  transform-origin: top center;
+  /* Scrubbed for as long as the divider is crossing, so the layer is earned;
+     the bands are removed from the DOM the moment the wipe completes. */
+  will-change: transform;
+  /* Kills the sub-pixel seam between bands at fractional device pixel ratios —
+     the same .5 overlap trick as `.shear`. */
+  margin-right: -0.5px;
 }
 
 /* ---------- preloader ---------- */
@@ -229,8 +403,10 @@ html[data-loader="play"] .hero-line > span {
 @utility marquee-track {
   display: flex;
   width: max-content;
-  animation: var(--animate-marquee);
-  /* One of the few legitimate permanent will-change cases: animates forever. */
+  /* No `animation` here any more — <Marquee /> drives this with a GSAP tween so
+     the strip can speed up with scroll velocity, which a keyframe can't do
+     without a style recalc per frame. See the note in motion/marquee.tsx.
+     One of the few legitimate permanent will-change cases: animates forever. */
   will-change: transform;
 }
 
@@ -253,8 +429,27 @@ html[data-loader="play"] .hero-line > span {
     filter: none !important;
     transform: none !important;
   }
+  /* The marquee's loop is a GSAP tween gated by matchMedia, so it is never
+     created under reduced motion and there is no animation to cancel. This stays
+     as the belt-and-braces for the transform itself: if the tween is ever killed
+     mid-loop the track must land at 0, not at whatever xPercent it stopped on. */
   .marquee-track {
     animation: none !important;
+    transform: none !important;
+  }
+  /* The cut, the shear and the comb wipe are never constructed under reduced
+     motion — no overlay, no copy, no bands, no triggers. These are here so a
+     stale node from a live setting change can't be left over the page. */
+  .cut-overlay,
+  .shear-panel,
+  .comb-wipe {
+    display: none !important;
+  }
+  .line-mask > span {
+    transform: none !important;
+  }
+  .comb {
+    transform: none !important;
   }
   .scroll-hint .drip {
     animation: none !important;

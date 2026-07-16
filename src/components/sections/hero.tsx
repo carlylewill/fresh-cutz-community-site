@@ -6,6 +6,7 @@ import { RazorDraw } from "@/components/motion/razor-draw";
 import { SplitHeadline } from "@/components/motion/split-headline";
 import { OpenStatusBadge } from "@/components/site/open-status-badge";
 import { RATING, REVIEW_COUNT } from "@/lib/services";
+import { NextOpeningTicket } from "./next-opening-ticket";
 
 export function Hero() {
   return (
@@ -94,7 +95,10 @@ export function Hero() {
         </div>
       </div>
 
+      {/* Both float over the full-bleed video in the right-hand side the copy
+          leaves empty, and are positioned as a pair — see sections.css. */}
       <RazorDraw />
+      <NextOpeningTicket />
 
       <div className="scroll-hint font-mono text-steel absolute bottom-7 left-[clamp(20px,4vw,48px)] z-2 flex items-center gap-2.5 text-[11px] tracking-[0.3em] uppercase">
         Scroll

@@ -32,50 +32,23 @@
   background: radial-gradient(ellipse at 30% 40%, transparent 0%, var(--color-ink) 78%);
 }
 
-/* MOBILE — full-bleed.
-   Verified: cover on a 390x844 viewport shows source x=710..1210, which sits
-   entirely inside the 656..1264 footage column, so the pillarbox bars never
-   reach the screen and nothing is upscaled. This is the strongest use of the
-   clip — it was shot for a phone. Opacity is well above the prototype's .14
-   because here the footage IS the hero, not texture; .hero-bg::after keeps the
+/* FULL-BLEED, at every width.
+   hero-2 was re-exported as a true full-frame 1920x1080 (verified with
+   cropdetect: 1880:1080:18:0 across the clip — a ~20px edge sliver that cover
+   eats anyway), so it fills a hero of any shape at native resolution. The
+   portrait panel that used to live here — the 608/1080 box, the border, the
+   right-edge inset, the left mask — is gone along with the pillarbox it existed
+   to dodge. Do not reintroduce it: there is nothing left to hide, and no
+   upscale to be careful of.
+
+   The opacity sits well above the prototype's .14 because here the footage IS
+   the hero, not texture; .hero-bg::after's radial vignette is what keeps the
    headline legible over it. */
 .hero-media-layer {
   position: absolute;
   inset: 0;
   opacity: 0.55;
   filter: grayscale(1) contrast(1.1);
-}
-
-/* DESKTOP — portrait panel beside the headline.
-   Full-bleed is impossible here: cover on 1440x900 would show source x=96..1824
-   and expose the bars. A box at the footage's exact 608/1080 centre-crops to
-   x=656..1264 — precisely the footage, no bars, no upscale (scale 0.69, still
-   downsampling). The prototype's radial mask assumes a backdrop, so it's
-   retargeted below to fade the panel's left edge into the ink instead. */
-@media (min-width: 861px) {
-  .hero-media-layer {
-    inset: auto;
-    top: 50%;
-    right: clamp(20px, 4vw, 48px);
-    transform: translateY(-50%);
-    height: min(72svh, 720px);
-    aspect-ratio: 608 / 1080;
-    opacity: 0.85;
-    border: 1px solid var(--color-line);
-    border-radius: var(--radius-md);
-    overflow: hidden;
-    /* Softens the inner edge into the hero so the panel reads as part of the
-       composition rather than a pasted-on rectangle. */
-    -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 22%);
-    mask-image: linear-gradient(90deg, transparent 0%, #000 22%);
-  }
-
-  /* The radial vignette is there to stop a full-bleed photo competing with the
-     headline. With the media confined to a right-hand panel it would only mute
-     the panel, so it goes. */
-  .hero-bg::after {
-    display: none;
-  }
 }
 
 /* (0,2,0) beats sections.css's `.hero-bg img` (0,1,1) regardless of import

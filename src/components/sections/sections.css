@@ -80,11 +80,13 @@
 }
 
 /* <RazorDraw /> owns the #razor-wrap markup and the draw timing; the hero owns
-   where it sits. */
+   where it sits. It floats over the full-bleed video in the right-hand half the
+   copy leaves empty. `bottom` clears the stub below it — the two share that
+   corner and are positioned as a pair. */
 #razor-wrap {
   position: absolute;
   right: clamp(-40px, 2vw, 60px);
-  bottom: 8vh;
+  bottom: clamp(170px, 24vh, 260px);
   width: clamp(260px, 34vw, 520px);
   z-index: 1;
   opacity: 0.9;
@@ -101,6 +103,51 @@
   stroke-width: 2.5;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+/* ---------- hero : next-opening stub ----------
+   The services stubs' treatment (ink-soft, hairline, radius-md, .t-perf) minus
+   .ticket's two punched notches. Those notches are circles filled with the
+   section's own flat background, which is the whole trick — over a full-bleed
+   video there is no flat colour to fill them with and they'd read as two grey
+   dots. The perforation carries the ticket idiom on its own.
+
+   Bottom-RIGHT, not the bottom-left the copy might suggest: the hero's left
+   column is the headline, the sub and the CTA row from top to bottom, and
+   .scroll-hint owns what's left of that corner. The right-hand side below the
+   razor is the only part of the frame the composition leaves free.
+
+   Wide viewports only, and 1000px is measured rather than picked. The CTA row's
+   last item ends at a near-fixed ~620px from the left (its items are fixed-width
+   and it starts at the gutter), while the stub's left edge is width-driven at
+   100vw - gutter - 232. Those cross at ~890px: 861px overlaps the row by 23px,
+   900px clears it by 13 — which is not clearance, it's luck — and 1000px clears
+   by 105 and only widens. Below that the stub is dropped rather than shuffled,
+   and nothing is lost: <OpenStatusBadge /> is already in the row telling the
+   visitor the same thing from the same hours. */
+#hero-ticket {
+  display: none;
+}
+
+@media (min-width: 1000px) {
+  #hero-ticket {
+    display: block;
+    position: absolute;
+    z-index: 2;
+    width: 232px;
+    right: clamp(20px, 4vw, 48px);
+    bottom: clamp(30px, 9vh, 92px);
+    background: color-mix(in srgb, var(--color-ink-soft) 82%, transparent);
+    /* Behind it is moving footage; without the blur the stub reads as a hole
+       punched in the video rather than a card resting on it. */
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-md);
+    padding: 16px 18px 14px;
+  }
+  #hero-ticket .t-perf {
+    margin: 12px 0 10px;
+  }
 }
 
 /* ---------- buttons ---------- */
@@ -233,15 +280,70 @@
   z-index: 1;
 }
 
-/* ---------- services : ticket stubs ---------- */
-.ticket {
+/*
+ * ---------- brass glow ----------
+ * One token so every bordered surface lights the same way rather than each
+ * component inventing its own shadow.
+ *
+ * box-shadow is a paint property, not transform/opacity — a documented
+ * exception. It's affordable here because it only ever animates on :hover,
+ * i.e. one element at a time under the pointer, never a scroll-driven repaint
+ * across a grid. The resting state carries no shadow at all, so there is no
+ * standing paint cost on the ~20 bordered cards.
+ *
+ * Two layers: a tight inner line that reads as the border itself catching
+ * light, and a wide soft bloom that reads as light thrown onto the ink behind
+ * it. One layer alone reads as a generic drop-shadow.
+ */
+@utility glow-brass {
+  box-shadow:
+    0 0 0 1px rgba(199, 168, 59, 0.35),
+    0 0 28px -6px rgba(199, 168, 59, 0.4);
+}
+
+.ticket,
+.hair-card,
+.barber,
+.rev,
+.chip {
+  /* Declared here, not on :hover, so the shadow eases OUT as well as in —
+     transitioning from an undeclared value snaps back. */
+  box-shadow: 0 0 0 0 rgba(199, 168, 59, 0);
   transition:
     transform 0.35s var(--ease-shear),
-    border-color 0.35s;
+    border-color 0.35s,
+    box-shadow 0.35s;
 }
+.ticket:hover,
+.hair-card:hover,
+.barber:hover,
+.rev:hover,
+.chip:hover {
+  border-color: var(--color-brass);
+  box-shadow:
+    0 0 0 1px rgba(199, 168, 59, 0.35),
+    0 0 28px -6px rgba(199, 168, 59, 0.4);
+}
+
+/* Keyboard users get the same affordance as the pointer. */
+.ticket:focus-within,
+.hair-card:focus-within,
+.chip:focus-visible {
+  border-color: var(--color-brass);
+  box-shadow:
+    0 0 0 1px rgba(199, 168, 59, 0.35),
+    0 0 28px -6px rgba(199, 168, 59, 0.4);
+}
+
+/* ---------- services : ticket stubs ---------- */
 .ticket:hover {
   transform: translateY(-6px);
-  border-color: var(--color-brass);
+}
+
+/* The booking shell is the page's one destination surface — it carries a
+   permanent, much fainter bloom so it reads as lit rather than outlined. */
+.book-shell {
+  box-shadow: 0 0 60px -20px rgba(199, 168, 59, 0.28);
 }
 /* The two punched notches. Filled with ink-deep to match #services' own
    background, which is what sells them as holes rather than dots. */
@@ -510,6 +612,39 @@
 }
 
 /* ---------- recent cuts ---------- */
+/* Four equal portrait cards on one row, inside .wrap so the strip's outer edges
+   line up with the heading above it. `1fr` columns rather than intrinsic widths
+   is what guarantees the row consumes the container exactly — the old rail sized
+   each card off its own ratio and left whatever didn't divide evenly as dead
+   space at the right. Every card carries its own aspect-ratio, so the row's
+   height is reserved before a single asset decodes. */
+.cut-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+/* Four 295px cards don't survive a phone. Below the point where they'd start
+   reading as thumbnails, the row becomes a snap rail and bleeds to the viewport
+   edge — a scroll rail that stops short of the edge reads as a broken grid. The
+   gutters match .sec's so a snapped card lands on the heading's line. */
+@media (max-width: 899px) {
+  .cut-grid {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    margin-inline: calc(clamp(20px, 4vw, 48px) * -1);
+    padding-inline: clamp(20px, 4vw, 48px);
+    scroll-padding-inline: clamp(20px, 4vw, 48px);
+    padding-bottom: 16px;
+  }
+  .cut-grid > * {
+    flex: 0 0 min(64vw, 300px);
+    scroll-snap-align: start;
+  }
+}
+
 /* Same greyscale->colour device as .hair-card, moved from scroll to hover so
    the strip reads as part of the same system rather than a new one. */
 .cut-tile img,

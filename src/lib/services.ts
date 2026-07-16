@@ -74,7 +74,10 @@ export const BARBERS = [
 
 export const SHOP = {
   phoneDisplay: "07415 409277",
-  phoneHref: "tel:07415409277",
+  phoneHref: "tel:+447415409277",
+  // wa.me needs E.164 without the +; the leading 0 is a UK national prefix and
+  // must be dropped or the link resolves to nothing.
+  whatsapp: "https://wa.me/447415409277",
   address: "18 Canning Road, Wealdstone, Harrow, HA3 7SJ",
   instagram: "https://www.instagram.com/fresh.cutz.barbers/",
 } as const;

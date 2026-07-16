@@ -3,17 +3,24 @@
  * duration and poster. Nothing else in the tree may hard-code a /media path or
  * a dimension — a re-encode or a rename should be one edit here.
  *
- * PILLARBOXING — the hero clips are not shaped like their dimensions claim.
- * hero-1/-2/-3 are 1920x1080 files whose real footage is a centred 608x1080
- * portrait column with near-black (rgb 2,0,2) bars either side: phone video
- * padded out to landscape before it ever reached us. `contentRatio` records the
- * shape of the footage; `ratio` records the shape of the file.
+ * PILLARBOXING — hero-1 and hero-3 are not shaped like their dimensions claim.
+ * They are 1920x1080 files whose real footage is a centred 608x1080 portrait
+ * column with near-black (rgb 2,0,2) bars either side: phone video padded out to
+ * landscape before it ever reached us. `contentRatio` records the shape of the
+ * footage; `ratio` records the shape of the file.
  *
- * That distinction is load-bearing, and it is why the cards size themselves off
- * `contentRatio`. An `object-fit: cover` box at 608/1080 centre-crops a
- * 1080-tall source to exactly 608 wide — which is exactly the footage, bars
- * gone, at 1:1 with no upscale and no re-encode. Hand one of these clips a 16:9
- * box instead and two thirds of the card is black.
+ * That distinction is load-bearing wherever it still applies: an
+ * `object-fit: cover` box at 608/1080 centre-crops a 1080-tall source to exactly
+ * 608 wide — exactly the footage, bars gone, at 1:1 with no upscale. Hand one of
+ * these clips a 16:9 box instead and two thirds of it is black.
+ *
+ * Every OTHER clip here is full-frame and its `contentRatio` equals its `ratio`
+ * — verified with ffmpeg cropdetect, which reports the full frame for each.
+ * hero-2 was re-exported as a true 1920x1080 landscape and the strip clips are
+ * genuine 720x1280 portrait, so the pillarbox workaround they once needed is
+ * gone. `contentRatio` stays on every video rather than becoming optional: the
+ * property is the question "what shape is the footage", and "the same as the
+ * file" is an answer to it, not an absence of one.
  */
 
 export type ImageAsset = {
@@ -35,28 +42,45 @@ export type VideoAsset = ImageAsset & {
   readonly contentRatio: number;
 };
 
-/** The real footage box inside the padded 1920x1080 hero clips. */
+/** The real footage box inside the padded 1920x1080 hero-1 / hero-3 clips. */
 const HERO_CONTENT_RATIO = 608 / 1080;
 
 export const MEDIA = {
-  /** Hero backdrop: the cutting loop. The longest clip, hence the only poster. */
+  /**
+   * Hero backdrop: the cutting loop, full-bleed behind the headline. Genuine
+   * full-frame landscape — no bars — so it covers a hero at any width.
+   *
+   * True 1080p, so a 1440px hero downscales it — no upscale ceiling. Re-encoded
+   * with a keyframe every 0.5s because Process seeks this clip's currentTime
+   * from scroll rather than playing it, and seeking between sparse keyframes is
+   * what makes a scrub stutter. Nothing should magnify it further — no
+   * zoom on hover. The longest clip, hence the only one worth a poster.
+   */
   heroLoop: {
     src: "/media/hero-2.mp4",
     width: 1920,
     height: 1080,
     ratio: 1920 / 1080,
-    duration: 14.07,
+    duration: 14.04,
     poster: "/media/hero-poster.jpg",
-    contentRatio: HERO_CONTENT_RATIO,
+    // No pillarbox: this is a true full-frame 1080p export, so the footage
+    // shape and the file shape are the same. Re-encoded with a keyframe every
+    // 0.5s because Process seeks this clip rather than playing it.
+    contentRatio: 1920 / 1080,
   },
-  /** Extracted from heroLoop @1.5s, so it is pillarboxed identically. */
+  /** Extracted from heroLoop, so it matches it frame for frame. */
   heroPoster: {
     src: "/media/hero-poster.jpg",
     width: 1920,
     height: 1080,
     ratio: 1920 / 1080,
   },
-  /** The walk-in shot: empty chairs, shop front to back. */
+  /**
+   * PILLARBOXED — see the note at the top. Unused since the strip moved to the
+   * full-frame clips below and the hero stopped needing a portrait panel; kept
+   * because the footage (the walk-in: empty chairs, shop front to back) is the
+   * only record of that shot and re-adding the entry is harder than keeping it.
+   */
   walkIn: {
     src: "/media/hero-1.mp4",
     width: 1920,
@@ -65,7 +89,8 @@ export const MEDIA = {
     duration: 2.77,
     contentRatio: HERO_CONTENT_RATIO,
   },
-  /** Caped client in the chair, barber working the top. */
+  /** PILLARBOXED, and unused, on the same terms as walkIn. Caped client in the
+      chair, barber working the top. */
   chairWork: {
     src: "/media/hero-3.mp4",
     width: 1920,
@@ -74,14 +99,32 @@ export const MEDIA = {
     duration: 4.23,
     contentRatio: HERO_CONTENT_RATIO,
   },
-  /** The only clip framed as shot — genuine full-frame portrait, no bars. */
+  /** Recent cuts, card 1. Genuine full-frame 9:16 portrait. */
   cutsLoop: {
     src: "/media/cuts-loop.mp4",
-    width: 1080,
-    height: 1920,
-    ratio: 1080 / 1920,
+    width: 720,
+    height: 1280,
+    ratio: 720 / 1280,
     duration: 2.24,
-    contentRatio: 1080 / 1920,
+    contentRatio: 720 / 1280,
+  },
+  /** Recent cuts, card 3. Genuine full-frame 9:16 portrait. */
+  stripClip1: {
+    src: "/media/strip-clip-1.mp4",
+    width: 720,
+    height: 1280,
+    ratio: 720 / 1280,
+    duration: 2.77,
+    contentRatio: 720 / 1280,
+  },
+  /** Recent cuts, card 4. Genuine full-frame 9:16 portrait. */
+  stripClip2: {
+    src: "/media/strip-clip-2.mp4",
+    width: 720,
+    height: 1280,
+    ratio: 720 / 1280,
+    duration: 4.23,
+    contentRatio: 720 / 1280,
   },
   tools: {
     src: "/media/tools.jpg",
@@ -123,8 +166,16 @@ export const SIZES = {
   wrapWideColumn: "(max-width: 860px) 100vw, (max-width: 1240px) 55vw, 660px",
   /** A centred prose column: `max-w-[1000px]` inside the section gutter. */
   proseFull: "(max-width: 1096px) calc(100vw - 96px), 1000px",
-  /** A tile in the Recent cuts rail: `w-[min(72vw,340px)]`. */
-  railCard: "(max-width: 480px) 72vw, 340px",
+  /**
+   * A card in the Recent cuts grid (`.cut-grid`), walked breakpoint by
+   * breakpoint because the container's gutter is itself a clamp:
+   *   >=1336px  .wrap caps at 1240; (1240 - 3*20 gap) / 4          = 295px
+   *   1200-1336 gutter pinned at 48; (100vw - 96 - 60) / 4
+   *   900-1199  gutter is 4vw, so .wrap is 92vw; (92vw - 60) / 4   = 23vw - 15px
+   *   <=899px   snap rail: min(64vw, 300px), which splits at 469px
+   */
+  cutsCard:
+    "(max-width: 468px) 64vw, (max-width: 899px) 300px, (max-width: 1199px) calc(23vw - 15px), (max-width: 1336px) calc((100vw - 156px) / 4), 295px",
 } as const;
 
 // Widened before the filter: `as const` types MEDIA's values as literals, and a

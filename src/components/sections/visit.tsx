@@ -6,12 +6,31 @@ import {
   ADDRESS_STREET,
   DIRECTIONS_URL,
   INSTAGRAM_HANDLE,
+  MAP_EMBED_URL,
 } from "@/components/site/shop-links";
+import {
+  ClockIcon,
+  InstagramIcon,
+  MapPinIcon,
+  PhoneIcon,
+  WhatsAppIcon,
+} from "@/components/site/icons";
 
-function Block({ label, children }: { label: string; children: React.ReactNode }) {
+function Block({
+  label,
+  icon,
+  children,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <div className="border-line reveal border-b py-[18px]" data-anim="fade">
-      <div className="font-mono text-brass text-[11px] tracking-[0.24em] uppercase">{label}</div>
+      <div className="font-mono text-brass flex items-center gap-2.5 text-[11px] tracking-[0.24em] uppercase">
+        {icon}
+        {label}
+      </div>
       <div className="font-display mt-1.5 text-[19px] font-medium tracking-[0.04em] uppercase">
         {children}
       </div>
@@ -58,7 +77,7 @@ export function Visit() {
           />
 
           <div>
-            <Block label="Address">
+            <Block label="Address" icon={<MapPinIcon />}>
               <a
                 href={DIRECTIONS_URL}
                 target="_blank"
@@ -66,19 +85,28 @@ export function Visit() {
                 className="hover:text-brass"
               >
                 {ADDRESS_STREET}
-                <small className={SUB}>{ADDRESS_REST} · Tap for directions</small>
+                <small className={SUB}>{ADDRESS_REST}</small>
               </a>
             </Block>
-            <Block label="Call / WhatsApp">
+            <Block label="Call" icon={<PhoneIcon />}>
               <a href={SHOP.phoneHref} className="hover:text-brass">
                 {SHOP.phoneDisplay}
               </a>
             </Block>
-            <Block label="Hours">
+            {/* Split out from the old combined "Call / WhatsApp" row: that one
+                only ever emitted a tel: link, so the WhatsApp half was a label
+                with nothing behind it. */}
+            <Block label="WhatsApp" icon={<WhatsAppIcon />}>
+              <a href={SHOP.whatsapp} target="_blank" rel="noreferrer" className="hover:text-brass">
+                {SHOP.phoneDisplay}
+                <small className={SUB}>Message the shop directly</small>
+              </a>
+            </Block>
+            <Block label="Hours" icon={<ClockIcon />}>
               Mon–Sat 10–20
               <small className={SUB}>Sunday 10:00 – 18:00 · Walk-ins when chairs are free</small>
             </Block>
-            <Block label="Instagram">
+            <Block label="Instagram" icon={<InstagramIcon />}>
               <a
                 href={SHOP.instagram}
                 target="_blank"
@@ -88,6 +116,37 @@ export function Visit() {
                 {INSTAGRAM_HANDLE}
               </a>
             </Block>
+
+            {/* Keyless embed, so there's no API key or billing account to break.
+                Greyscale + brass border so a stock Google map doesn't fight the
+                v2 palette; it comes to full colour on hover like the hair cards. */}
+            <div
+              className="reveal border-line mt-8 overflow-hidden rounded-md border"
+              data-anim="fade"
+            >
+              <iframe
+                src={MAP_EMBED_URL}
+                title="Fresh Cutz Barbers on Google Maps"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                allowFullScreen
+                className="block h-[260px] w-full grayscale transition-[filter] duration-500 hover:grayscale-0"
+              />
+            </div>
+
+            <a
+              href={DIRECTIONS_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-primary reveal mt-4 flex w-full justify-center"
+              data-anim="fade"
+            >
+              <i className="sweep" />
+              <span className="relative flex items-center gap-2.5">
+                <MapPinIcon />
+                Get directions
+              </span>
+            </a>
           </div>
         </div>
       </div>

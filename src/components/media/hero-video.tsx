@@ -7,17 +7,15 @@ import { MEDIA, SIZES } from "@/lib/media";
 /**
  * The hero media.
  *
- * Art direction is dictated by the footage: hero-2.mp4 is a 608×1080 portrait
- * column pillarboxed into a 1920×1080 file (phone video padded to landscape —
- * see the note in lib/media.ts). There is no way to fill a desktop-width hero
- * from it: the file's own 16:9 box shows black bars, and cropping to the real
- * content and covering 1440px upscales ~2.4× and throws away ~65% of the frame
- * height. So the layout follows the content rather than fighting it:
+ * hero-2.mp4 is a true full-frame 1920×1080 export, so this is simply
+ * full-bleed at every width — cover downscales it rather than stretching it.
  *
- *   - Desktop: a portrait panel at the footage's true 608/1080, beside the
- *     headline. No upscale, no bars, nothing cropped.
- *   - Mobile: full-bleed, where a 9:16-ish column fits the viewport natively
- *     and is the strongest use of this clip.
+ * (History, because it explains the shape of the surrounding code: an earlier
+ * cut of this file was a 608×1080 portrait column pillarboxed into a 1920×1080
+ * container, which forced a portrait-panel layout to avoid showing the bars.
+ * That treatment is gone. If a future export regresses to pillarboxed, cover
+ * will happily paint the black bars — check `cropdetect`, don't trust the
+ * container dimensions.)
  *
  * The gate is mounted state, not CSS. A <video> that renders on the server and
  * is hidden with display:none, hidden, or a media query still fetches:

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { SERVICES, BARBERS } from "@/lib/services";
+import { SERVICES, BARBERS, SHOP } from "@/lib/services";
 import { Magnetic } from "@/components/motion/magnetic";
 import { createBookingAction, type BookingFormState } from "@/actions/bookings";
 
@@ -88,6 +88,30 @@ export function BookingWizard({ whatsappEnabled }: { whatsappEnabled: boolean })
                   <b>You</b>Confirmed ✓
                 </div>
               </div>
+              {/*
+               * Safety net. sendEmail swallows failures by design, so a booking
+               * can succeed while notifying nobody — which is exactly the state
+               * the shop is in until the sending domain is DNS-verified. The
+               * request IS saved either way, but without this the customer is
+               * left waiting on a confirmation that may never come, with no way
+               * to chase. Give them a channel that works today.
+               */}
+              <p className="font-mono text-steel mt-5 text-[12px] tracking-[0.06em]">
+                Not heard back by the end of the day?{" "}
+                <a
+                  href={SHOP.whatsapp}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-brass hover:text-brass-bright underline underline-offset-4"
+                >
+                  WhatsApp us
+                </a>{" "}
+                or call{" "}
+                <a href={SHOP.phoneHref} className="text-brass hover:text-brass-bright">
+                  {SHOP.phoneDisplay}
+                </a>{" "}
+                and we&rsquo;ll sort it.
+              </p>
             </div>
           </div>
         ) : (
