@@ -51,9 +51,8 @@
   }
   html {
     scroll-behavior: auto;
-    /* Preloader locks scroll with overflow:hidden; without this the restore
-       shifts the page by the scrollbar width on desktop. */
-    scrollbar-gutter: stable;
+    height: 100%;
+    -webkit-text-size-adjust: 100%;
   }
   body {
     background: var(--color-ink);
@@ -61,9 +60,15 @@
     font-family: var(--font-body);
     font-weight: 300;
     line-height: 1.6;
-    /* clip, not hidden: `hidden` on the scroll container can create a nested
-       scroll context that confuses Lenis's height math. */
-    overflow-x: clip;
+    /*
+     * THE APP SHELL — see #scroller below. <body> is the frame, not the
+     * scrolling box: a fixed-height flex column that never scrolls, holding the
+     * header and the one element that does.
+     */
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     -webkit-font-smoothing: antialiased;
   }
   img {
@@ -85,6 +90,48 @@
     background: var(--color-brass);
     color: var(--color-ink);
   }
+}
+
+/*
+ * ---------- the app shell ----------
+ * The ONE scrolling box on the page, and the whole reason the header is a
+ * sibling of it rather than a `position: fixed` bar inside it.
+ *
+ * On iOS Safari the URL bar collapses as you scroll, and it moves the visual
+ * viewport independently of anything the page paints. A fixed (or sticky)
+ * header therefore cannot stay welded to the top: for the duration of the
+ * collapse, page content paints into the strip ABOVE it. Every "cover it up"
+ * fix fails for the same reason — the bar and the cover are moved by different
+ * agents. The only fix is to take the header out of the scrolling box entirely,
+ * so there is no scroll position at which anything can appear above it.
+ *
+ * Consequences, all load-bearing:
+ *   - <Nav /> is `position: relative`, NOT fixed/sticky. It is an ordinary flex
+ *     child of <body> and publishes its measured height as --nav-h.
+ *   - Lenis is constructed with `wrapper`/`content` pointing here, and
+ *     ScrollTrigger.defaults({ scroller }) is set from <ScrollerBinding /> before
+ *     a single trigger is created. Both used to drive window/documentElement.
+ *   - Anything reading window.scrollY / listening for window "scroll" must read
+ *     this element instead — the window no longer scrolls at all.
+ *   - `100vh`/`100svh`/`100dvh` inside here overflow by the header's height.
+ *     Full-height boxes use calc(100dvh - var(--nav-h)).
+ *
+ * NEVER add `container-type: size` here: it implies `contain: layout`, which
+ * silently kills `position: sticky` for every descendant.
+ */
+#scroller {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  /* clip, not hidden: `hidden` here would make this a nested scroll context on
+     the x axis and confuse Lenis's height math. */
+  overflow-x: clip;
+  -webkit-overflow-scrolling: touch;
+  /* No scroll chaining to the (unscrollable) body, and no rubber-band handoff. */
+  overscroll-behavior-y: none;
+  /* Preloader locks scroll by setting overflow:hidden on THIS element; without
+     the gutter the restore shifts the page by the scrollbar width on desktop. */
+  scrollbar-gutter: stable;
 }
 
 /* ---------- grain ---------- */
@@ -346,7 +393,10 @@ html[data-loader="play"] .hero-line > span {
 .comb-wipe {
   position: absolute;
   inset: 0 0 auto 0;
-  height: 100vh;
+  /* One scroller-viewport, not one browser-viewport: this lives inside
+     #scroller, which is shorter than the window by the header. See the app
+     shell note above. */
+  height: calc(100dvh - var(--nav-h, 64px));
   z-index: 2;
   pointer-events: none;
   display: flex;

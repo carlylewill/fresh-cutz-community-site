@@ -10,7 +10,14 @@ import { gsap, useIsoLayoutEffect } from "@/lib/motion";
  * feeds ScrollTrigger, so a numeric scrub would stack a second lag on top and the
  * razor would visibly trail the page instead of belonging to it.
  */
-const range = () => ({ trigger: "header", start: "top top", end: "bottom top", scrub: true });
+/*
+ * `#top`, NOT `"header"`. The hero used to be the document's only <header>, so
+ * the tag name was a safe handle for it. The nav bar is the <header> now — it
+ * has to be, to sit outside #scroller — and it comes first in the DOM, so a
+ * `"header"` selector would quietly scrub the parallax against an 80px bar that
+ * never moves. Same element the cut is anchored to (<CutTransition source>).
+ */
+const range = () => ({ trigger: "#top", start: "top top", end: "bottom top", scrub: true });
 
 export function HeroParallax() {
   useIsoLayoutEffect(() => {

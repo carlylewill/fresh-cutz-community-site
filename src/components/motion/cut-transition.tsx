@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { gsap, ScrollTrigger, useIsoLayoutEffect } from "@/lib/motion";
+import { gsap, ScrollTrigger, scrollTop, useIsoLayoutEffect, viewportHeight } from "@/lib/motion";
 import { useLoaderDone } from "./loader-gate";
 import {
   createRiser,
@@ -132,7 +132,12 @@ export function CutTransition({ source = "#top" }: { source?: string }) {
       let facing = 0;
       // Cached on refresh rather than read per frame: the tool travels the
       // viewport's height, and ScrollTrigger already recomputes on resize.
-      let travel = window.innerHeight;
+      //
+      // The SCROLLER's height, not window.innerHeight — the two differ by the
+      // header now. Using the window's would overshoot the tool and the riser by
+      // ~80px, so the blade would still be travelling after the cut was fully
+      // open. See the app-shell note in globals.css.
+      let travel = viewportHeight();
 
       function open(self: ScrollTrigger) {
         if (panels) return;
@@ -153,7 +158,11 @@ export function CutTransition({ source = "#top" }: { source?: string }) {
         // Reading the trigger rather than re-deriving `start`'s rule ("the
         // hero's bottom on the viewport's bottom") means the two cannot drift:
         // change the range below and this follows it.
-        const heroTopDoc = hero!.getBoundingClientRect().top + window.scrollY;
+        // scrollTop(), not window.scrollY: the window's scroll position is
+        // permanently 0 under the app shell, so this would collapse to the
+        // hero's viewport-relative top and the panels would be a viewport out on
+        // the way back up.
+        const heroTopDoc = hero!.getBoundingClientRect().top + scrollTop();
         panels = createShearPanels(hero!, {
           axis: "vertical",
           top: heroTopDoc - self.start,
@@ -204,7 +213,7 @@ export function CutTransition({ source = "#top" }: { source?: string }) {
         // reads it natively: no scrollerProxy, deliberately.
         scrub: true,
         onRefresh: () => {
-          travel = window.innerHeight;
+          travel = viewportHeight();
         },
         // Both edges, both directions: the cut exists whenever the hero is
         // mid-exit, however the user got there. `open` is handed the trigger

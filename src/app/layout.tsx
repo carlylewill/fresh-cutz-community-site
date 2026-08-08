@@ -3,9 +3,11 @@ import type { ReactNode } from "react";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { fontVariables } from "@/lib/fonts";
 import { SmoothScrollProvider } from "@/components/motion/smooth-scroll-provider";
+import { ScrollerBinding } from "@/components/motion/scroller-binding";
 import { LoaderGate } from "@/components/motion/loader-gate";
 import { ScissorCursor } from "@/components/cursor/scissor-cursor";
 import { TicketSnip } from "@/components/flourish/ticket-snip";
+import { Nav } from "@/components/site/nav";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -76,11 +78,30 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: LOADER_GATE }} />
       </head>
+      {/*
+       * THE APP SHELL. <body> is a 100dvh flex column that never scrolls; the
+       * header is a flex child and #scroller is its sibling, so on iOS Safari
+       * there is no scroll position at which page content can paint above the
+       * bar while the URL bar collapses. The rules, and the reason every
+       * alternative fails, are in globals.css.
+       *
+       * <ScrollerBinding /> is deliberately the first child: see the contract in
+       * its own file. <ScissorCursor />, <TicketSnip /> and the preloader all
+       * render `position: fixed` elements or nothing at all, so none of them
+       * take part in the flex column.
+       */}
       <body>
+        <ScrollerBinding />
         <ScissorCursor />
         <TicketSnip />
         <SmoothScrollProvider>
-          <LoaderGate>{children}</LoaderGate>
+          <LoaderGate>
+            {/* Hoisted out of <HomePage /> so it can sit OUTSIDE the scrolling
+                box. It renders null on the token-scoped /booking pages, which
+                have never carried the site nav. */}
+            <Nav />
+            <div id="scroller">{children}</div>
+          </LoaderGate>
         </SmoothScrollProvider>
         {/* Renders nothing unless a real measurement ID is configured, so the
             old G-XXXXXXXXXX placeholder can never ship again. */}

@@ -1,6 +1,5 @@
 import { ScrollReveals } from "@/components/motion/reveal";
 import { BookingWizard } from "@/components/booking/booking-wizard";
-import { Nav } from "@/components/site/nav";
 import { Footer } from "@/components/site/footer";
 import { FloatingBook } from "@/components/site/floating-book";
 import { Hero } from "./hero";
@@ -33,7 +32,9 @@ export function HomePage({ whatsappEnabled }: { whatsappEnabled: boolean }) {
       {/* Mounted once, near the root: it binds every .reveal on the page in a
           single pass rather than per-section. */}
       <ScrollReveals />
-      <Nav />
+      {/* <Nav /> is NOT here any more. It is mounted by the root layout as a
+          sibling of #scroller, because a header inside the scrolling box is
+          exactly what iOS Safari paints content above. See globals.css. */}
       <main>
         <Hero />
         <MarqueeStrip />

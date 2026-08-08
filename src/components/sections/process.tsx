@@ -375,7 +375,7 @@ export function Process() {
     <section
       id="process"
       ref={section}
-      className="bg-ink-deep relative motion-safe:md:h-[calc(var(--p-beats)*100vh)]"
+      className="bg-ink-deep relative motion-safe:md:h-[calc(var(--p-beats)*(100dvh-var(--nav-h,64px)))]"
       // The scroll length is one viewport per beat, kept live against BEATS
       // rather than hardcoded as `400vh`. It goes through a custom property
       // because the height must be media-query-scoped (an inline height would
@@ -384,7 +384,14 @@ export function Process() {
     >
       {/* Pinned on desktop; on mobile/reduced-motion an ordinary block whose
           height comes from the beat list inside it. */}
-      <div ref={stage} className="relative overflow-hidden motion-safe:md:h-[100svh]">
+      {/* One SCROLLER viewport, not one browser viewport. The pinned stage lives
+          inside #scroller, which is shorter than the window by the header — at
+          100svh the bottom of every beat would be pinned out of sight. Section
+          height stays exactly one stage per beat so the scrub still maps 1:1. */}
+      <div
+        ref={stage}
+        className="relative overflow-hidden motion-safe:md:h-[calc(100dvh-var(--nav-h,64px))]"
+      >
         {/*
          * The full-bleed clips, one per beat, stacked and crossfaded in place.
          * Only on the playing path — the stacked path carries its own portrait

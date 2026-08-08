@@ -1,8 +1,21 @@
 "use client";
 
 import { useRef } from "react";
-import { gsap, useIsoLayoutEffect } from "@/lib/motion";
+import { gsap, getScroller, useIsoLayoutEffect } from "@/lib/motion";
 import { useLenis } from "./smooth-scroll-provider";
+
+/**
+ * Lenis alone doesn't block keyboard/spacebar scroll, so the loader also clamps
+ * the scroll container outright.
+ *
+ * #scroller, NOT documentElement: <html> has not scrolled since the app shell
+ * landed, so locking it would be a no-op and the page would scroll away
+ * underneath the overlay on the first spacebar. See globals.css.
+ */
+function lockScroll(locked: boolean) {
+  const el = getScroller();
+  if (el) el.style.overflow = locked ? "hidden" : "";
+}
 
 /**
  * "The Cut" — ported from freshcutz-v2_1.html with four deliberate changes:
@@ -41,7 +54,7 @@ export function Preloader({ onDone }: { onDone: () => void }) {
           } catch {
             // Private mode — the loader simply plays again. Not worth failing for.
           }
-          document.documentElement.style.overflow = "";
+          lockScroll(false);
           lenis?.start();
           onDone();
         },
@@ -76,9 +89,8 @@ export function Preloader({ onDone }: { onDone: () => void }) {
         .set(root.current, { pointerEvents: "none" }, "<")
         .set(root.current, { display: "none" });
 
-      // Lenis alone doesn't block keyboard/spacebar scroll.
       lenis?.stop();
-      document.documentElement.style.overflow = "hidden";
+      lockScroll(true);
 
       // Failsafe: never trap someone behind the overlay if a tween is starved.
       gsap.delayedCall(5, () => {
@@ -88,7 +100,7 @@ export function Preloader({ onDone }: { onDone: () => void }) {
 
     return () => {
       ctx.revert();
-      document.documentElement.style.overflow = "";
+      lockScroll(false);
       lenis?.start();
     };
   }, [lenis]);

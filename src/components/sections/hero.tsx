@@ -10,9 +10,34 @@ import { NextOpeningTicket } from "./next-opening-ticket";
 
 export function Hero() {
   return (
-    <header
+    /*
+     * A <section>, not a <header>. The site's only <header> is now the nav bar
+     * outside #scroller — two of them and every `querySelector("header")` on the
+     * page (<HeroParallax />'s trigger, and any assistive-tech landmark walk)
+     * silently resolves to whichever comes first in the DOM, which would be the
+     * bar.
+     *
+     * The height is one SCROLLER viewport, not one browser viewport: the header
+     * is a real flex sibling now, so `100svh` here would overflow by its height
+     * and leave the hero's last band of copy permanently below the fold.
+     * --nav-h is published by <Nav />; the 64px fallback covers the frame or two
+     * before its ResizeObserver reports.
+     *
+     * `pt` is down from a flat 120px, and that is a required knock-on rather
+     * than a taste change: the old value was clearance for a fixed bar that
+     * overlapped this section. Nothing overlaps it now, so 120 would be counted
+     * twice and push the centred copy visibly low.
+     *
+     * Zero of it on a phone, measured rather than guessed. The copy column is
+     * ~525px against a ~583px box at 390x844, so the slack here is the only
+     * thing keeping the headline block off the `.scroll-hint` pinned to the
+     * bottom-left. At 0 the gap is exactly what it was before this section lost
+     * the header's height; anything more eats into it. Desktop has ~300px of
+     * room to spare and keeps the breathing space.
+     */
+    <section
       id="top"
-      className="relative flex min-h-[100svh] flex-col justify-center overflow-hidden px-[clamp(20px,4vw,48px)] pt-[120px]"
+      className="relative flex min-h-[calc(100dvh-var(--nav-h,64px))] flex-col justify-center overflow-hidden px-[clamp(20px,4vw,48px)] md:pt-[44px]"
     >
       {/* Renders the .hero-bg container, poster and overlay itself (and owns the
           LCP priority). <HeroParallax /> renders null and scrubs whatever
@@ -104,6 +129,6 @@ export function Hero() {
         Scroll
         <i className="drip" aria-hidden />
       </div>
-    </header>
+    </section>
   );
 }
