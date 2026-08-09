@@ -627,24 +627,19 @@
   gap: 20px;
 }
 
-/* Four 295px cards don't survive a phone. Below the point where they'd start
-   reading as thumbnails, the row becomes a snap rail and bleeds to the viewport
-   edge — a scroll rail that stops short of the edge reads as a broken grid. The
-   gutters match .sec's so a snapped card lands on the heading's line. */
+/* Four 295px cards don't survive a phone as one row, but a swipe rail is not
+   the fix - see ~/.claude/studio-rules/no-horizontal-scroll-on-mobile.md.
+   This used to be `overflow-x: auto` with scroll-snap, which is exactly the
+   banned pattern: a reader can stop at it, or miss its content entirely
+   because they never realise it pans. 2x2 keeps all four cards the same
+   size and ratio as the desktop row (same content, same density, nothing
+   stripped back) and every one is on screen with a straight vertical
+   scroll - no gesture change, nothing to swipe past. */
 @media (max-width: 899px) {
   .cut-grid {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: 16px;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    margin-inline: calc(clamp(20px, 4vw, 48px) * -1);
-    padding-inline: clamp(20px, 4vw, 48px);
-    scroll-padding-inline: clamp(20px, 4vw, 48px);
-    padding-bottom: 16px;
-  }
-  .cut-grid > * {
-    flex: 0 0 min(64vw, 300px);
-    scroll-snap-align: start;
   }
 }
 

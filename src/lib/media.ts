@@ -326,10 +326,16 @@ export const SIZES = {
    *   >=1336px  .wrap caps at 1240; (1240 - 3*20 gap) / 4          = 295px
    *   1200-1336 gutter pinned at 48; (100vw - 96 - 60) / 4
    *   900-1199  gutter is 4vw, so .wrap is 92vw; (92vw - 60) / 4   = 23vw - 15px
-   *   <=899px   snap rail: min(64vw, 300px), which splits at 469px
+   *   <=899px   2x2 grid (16px gap), gutter still 4vw down to its 500px floor:
+   *             500-899  (100vw - 2*4vw - 16) / 2  = 46vw - 8px
+   *             <=500    (100vw - 2*20 - 16) / 2   = 50vw - 28px
+   * <=899px used to be a snap rail (min(64vw, 300px)) - see the comment above
+   * `.cut-grid`'s mobile rule in sections.css for why that's gone. A stale
+   * `sizes` here would still overfetch against the narrower 2-up card even
+   * though the layout no longer swipes.
    */
   cutsCard:
-    "(max-width: 468px) 64vw, (max-width: 899px) 300px, (max-width: 1199px) calc(23vw - 15px), (max-width: 1336px) calc((100vw - 156px) / 4), 295px",
+    "(max-width: 500px) calc(50vw - 28px), (max-width: 899px) calc(46vw - 8px), (max-width: 1199px) calc(23vw - 15px), (max-width: 1336px) calc((100vw - 156px) / 4), 295px",
 } as const;
 
 // Widened before the filter: `as const` types MEDIA's values as literals, and a

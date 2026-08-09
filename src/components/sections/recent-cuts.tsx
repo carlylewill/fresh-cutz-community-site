@@ -5,7 +5,9 @@ import { MEDIA, SIZES } from "@/lib/media";
 import { SHOP } from "@/lib/services";
 
 /**
- * Four equal portrait cards on one row. Layout is `.cut-grid` in sections.css.
+ * Four equal portrait cards: one row of four on desktop, a 2x2 grid below
+ * 900px (never a swipe rail - see `.cut-grid` in sections.css). Layout is
+ * `.cut-grid` in sections.css.
  *
  * THE CARD RATIO IS 9:16, and it needs no compromise: the three clips are all
  * genuine full-frame 720x1280, so each one sizes itself to exactly this box off
