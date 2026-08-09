@@ -63,18 +63,21 @@ const BEATS = [
 ];
 
 /**
- * The one condition under which this section pins and plays, shared verbatim by
- * the CSS (as `motion-safe:md:`) and by gsap.matchMedia below. `48rem` rather
- * than `768px` to match Tailwind's `md` byte for byte — a media query resolves
- * `rem` against the initial root font size, so the two are the same 768px
- * regardless of any html font-size.
+ * The one condition under which this section sticks and plays, shared verbatim
+ * by the CSS (as `motion-safe:md:`) and by gsap.matchMedia below. `48rem`
+ * rather than `768px` to match Tailwind's `md` byte for byte — a media query
+ * resolves `rem` against the initial root font size, so the two are the same
+ * 768px regardless of any html font-size.
  *
- * MOBILE IS DELIBERATELY EXCLUDED from the pin: the URL bar collapsing resizes
- * the viewport and fights it, and four video decoders on the weakest hardware
- * for a decorative effect is the wrong trade. A phone gets the same four beats
- * as a stacked list, each with its own sharp portrait still — the per-step story
- * survives at full quality, it just doesn't move, and Process costs a phone zero
- * video bytes. A list cannot read as "stuck": nothing is holding the scroll.
+ * MOBILE IS DELIBERATELY EXCLUDED from the crossfading stage: four video
+ * decoders on the weakest hardware for a decorative effect is the wrong trade.
+ * That is a performance call, not a scroll-mechanism one — the stage itself is
+ * held with CSS `position: sticky`, not a ScrollTrigger `pin`, so there is
+ * nothing here for the URL bar to fight either way. A phone gets the same four
+ * beats as a stacked list, each with its own sharp portrait still — the
+ * per-step story survives at full quality, it just doesn't move, and Process
+ * costs a phone zero video bytes. A list cannot read as "stuck": nothing is
+ * holding the scroll.
  */
 const PLAY_QUERY = "(prefers-reduced-motion: no-preference) and (min-width: 48rem)";
 
@@ -104,8 +107,8 @@ function presence(d: number): number {
 }
 
 /**
- * "The Chair, Start to Finish" — four beats, four different clips, pinned, each
- * clip full-bleed behind its own step text.
+ * "The Chair, Start to Finish" — four beats, four different clips, held on a
+ * sticky stage, each clip full-bleed behind its own step text.
  *
  * EVERYTHING VISUAL IS A PURE FUNCTION OF `self.progress`, and that is a fix
  * rather than a preference. This section previously drove the beats from
@@ -133,7 +136,7 @@ function presence(d: number): number {
  * rates (24/30/25) and from 2.2s to 14.1s, so a per-beat seek would scrub at
  * four different speeds for no reason.
  *
- * REDUCED MOTION / MOBILE: no pin, no scrub, no video. The base markup IS the
+ * REDUCED MOTION / MOBILE: no sticky stage, no scrub, no video. The base markup IS the
  * final state — four beats in flow, each with its own still — so those visitors
  * land on a finished section, and the layout switch is pure CSS
  * (`motion-safe:md:`), never JS. Branching the markup in render would be a
@@ -241,8 +244,8 @@ export function Process() {
        *
        * `load()` is NOT free — it resets the element and re-runs resource
        * selection on the main thread. Calling it from onUpdate (during the
-       * pinned scroll) measured a 175ms spike, so it happens here instead, off
-       * the scroll path, from the approach trigger below.
+       * sticky-held scroll) measured a 175ms spike, so it happens here instead,
+       * off the scroll path, from the approach trigger below.
        */
       const warmed = new Set<number>();
       const warm = (i: number) => {
@@ -280,12 +283,19 @@ export function Process() {
         }
       };
 
+      // NOT `pin: stage.current`. `section` is already sized to N viewports
+      // (--p-beats * one stage) in the className below, and `stage` itself is
+      // `position: sticky; top: 0` in CSS — a non-window scroller pins by
+      // per-frame transform, which is the phone shake, so the hold is native
+      // CSS and this trigger exists purely to read `self.progress` off the
+      // same start/end bracket. Removing `pin` here is the whole fix: no
+      // `.pin-spacer` is ever inserted, and the section's own height IS the
+      // spacer.
       let current = -1;
       ScrollTrigger.create({
         trigger: section.current,
         start: "top top",
         end: "bottom bottom",
-        pin: stage.current,
         // `scrub: true`, never a number. Lenis already smooths the scroll
         // position ScrollTrigger reads, so a numeric scrub stacks a second lag
         // and the rail visibly trails the page (same call as <HeroParallax />
@@ -340,9 +350,10 @@ export function Process() {
 
       // 1.5 viewports of warning, and beats 1-2 warmed synchronously rather than
       // through the queue: this fires during ordinary scrolling, nowhere near the
-      // pin, so it can afford the load() calls the pinned scroll cannot. Beat 1
-      // is on screen the instant the section pins and cannot wait for an idle
-      // slot. Anyone who never scrolls this far still pays nothing.
+      // sticky hold, so it can afford the load() calls the sticky-held scroll
+      // cannot. Beat 1 is on screen the instant the section's stage sticks and
+      // cannot wait for an idle slot. Anyone who never scrolls this far still
+      // pays nothing.
       const prefetch = ScrollTrigger.create({
         trigger: section.current,
         start: "top bottom+=150%",
@@ -366,8 +377,10 @@ export function Process() {
       };
     });
 
-    // Reverts the pin too — a pinned section that skips this leaves its
-    // pin-spacer div behind and every trigger below it measures against a ghost.
+    // Nothing pin-shaped to leave behind now - the stage is CSS `sticky`, so
+    // there is no `.pin-spacer` for a skipped revert to strand a trigger
+    // against. Still has to run: it's what kills the ScrollTrigger itself and
+    // every tween/set it drove.
     return () => mm.revert();
   }, [playable]);
 
@@ -375,22 +388,29 @@ export function Process() {
     <section
       id="process"
       ref={section}
-      className="bg-ink-deep relative motion-safe:md:h-[calc(var(--p-beats)*(100dvh-var(--nav-h,64px)))]"
+      className="bg-ink-deep relative motion-safe:md:h-[calc(var(--p-beats)*(100svh-var(--nav-h,64px)))]"
       // The scroll length is one viewport per beat, kept live against BEATS
       // rather than hardcoded as `400vh`. It goes through a custom property
       // because the height must be media-query-scoped (an inline height would
-      // apply on mobile too, where there is no pin to fill it).
+      // apply on mobile too, where there is no sticky stage to fill it). This
+      // section IS the spacer the sticky stage below travels inside - its
+      // height stays exactly one stage per beat so the scrub still maps 1:1,
+      // same number that used to size ScrollTrigger's own pin-spacer.
       style={{ "--p-beats": BEATS.length } as React.CSSProperties}
     >
-      {/* Pinned on desktop; on mobile/reduced-motion an ordinary block whose
-          height comes from the beat list inside it. */}
-      {/* One SCROLLER viewport, not one browser viewport. The pinned stage lives
-          inside #scroller, which is shorter than the window by the header — at
-          100svh the bottom of every beat would be pinned out of sight. Section
-          height stays exactly one stage per beat so the scrub still maps 1:1. */}
+      {/* Sticky-held on desktop; on mobile/reduced-motion an ordinary block
+          whose height comes from the beat list inside it. */}
+      {/* One SCROLLER viewport, not one browser viewport. The sticky stage
+          lives inside #scroller, which is shorter than the window by the
+          header - at 100svh the bottom of every beat would sit out of sight.
+          `top-0` sticks it to the top of #scroller (the nearest scrolling
+          ancestor), not the window, which is the whole reason this is native
+          CSS sticky and not a ScrollTrigger `pin` - a pin re-centers itself by
+          transform every frame against a scroller that isn't the window, and
+          that per-frame transform is the phone shake. */}
       <div
         ref={stage}
-        className="relative overflow-hidden motion-safe:md:h-[calc(100dvh-var(--nav-h,64px))]"
+        className="relative overflow-hidden motion-safe:md:sticky motion-safe:md:top-0 motion-safe:md:h-[calc(100svh-var(--nav-h,64px))]"
       >
         {/*
          * The full-bleed clips, one per beat, stacked and crossfaded in place.

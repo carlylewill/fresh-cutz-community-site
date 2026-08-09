@@ -65,7 +65,7 @@
      * scrolling box: a fixed-height flex column that never scrolls, holding the
      * header and the one element that does.
      */
-    height: 100dvh;
+    height: 100svh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -113,8 +113,8 @@
  *     a single trigger is created. Both used to drive window/documentElement.
  *   - Anything reading window.scrollY / listening for window "scroll" must read
  *     this element instead — the window no longer scrolls at all.
- *   - `100vh`/`100svh`/`100dvh` inside here overflow by the header's height.
- *     Full-height boxes use calc(100dvh - var(--nav-h)).
+ *   - `100vh`/`100svh` inside here overflow by the header's height.
+ *     Full-height boxes use calc(100svh - var(--nav-h)).
  *
  * NEVER add `container-type: size` here: it implies `contain: layout`, which
  * silently kills `position: sticky` for every descendant.
@@ -396,7 +396,7 @@ html[data-loader="play"] .hero-line > span {
   /* One scroller-viewport, not one browser-viewport: this lives inside
      #scroller, which is shorter than the window by the header. See the app
      shell note above. */
-  height: calc(100dvh - var(--nav-h, 64px));
+  height: calc(100svh - var(--nav-h, 64px));
   z-index: 2;
   pointer-events: none;
   display: flex;

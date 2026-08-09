@@ -40,7 +40,7 @@ export function Nav() {
    *
    * Load-bearing, not informational: the header is no longer an overlay, so it
    * eats real height out of the scrolling box. Anything that wants to be exactly
-   * one scroller-viewport tall has to subtract it — `100dvh` inside #scroller
+   * one scroller-viewport tall has to subtract it — `100svh` inside #scroller
    * now overflows by precisely this number. Measured rather than hardcoded
    * because the bar's padding is `max(18px, env(safe-area-inset-top))`, which
    * differs between a notched phone, a flat one and a desktop.

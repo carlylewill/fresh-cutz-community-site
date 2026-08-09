@@ -79,7 +79,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: LOADER_GATE }} />
       </head>
       {/*
-       * THE APP SHELL. <body> is a 100dvh flex column that never scrolls; the
+       * THE APP SHELL. <body> is a 100svh flex column that never scrolls; the
        * header is a flex child and #scroller is its sibling, so on iOS Safari
        * there is no scroll position at which page content can paint above the
        * bar while the URL bar collapses. The rules, and the reason every

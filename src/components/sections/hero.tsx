@@ -37,7 +37,7 @@ export function Hero() {
      */
     <section
       id="top"
-      className="relative flex min-h-[calc(100dvh-var(--nav-h,64px))] flex-col justify-center overflow-hidden px-[clamp(20px,4vw,48px)] md:pt-[44px]"
+      className="relative flex min-h-[calc(100svh-var(--nav-h,64px))] flex-col justify-center overflow-hidden px-[clamp(20px,4vw,48px)] md:pt-[44px]"
     >
       {/* Renders the .hero-bg container, poster and overlay itself (and owns the
           LCP priority). <HeroParallax /> renders null and scrubs whatever
