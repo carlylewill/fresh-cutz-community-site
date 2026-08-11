@@ -325,6 +325,10 @@ html[data-loader="play"] .hero-line > span {
 }
 .cut-riser-inner {
   position: absolute;
+  /* Overwritten inline by createRiser() with the SCROLLER's offset from the top
+     of the window — this riser is fixed to the window, the page it stands in for
+     is not, and the difference is the header's height. `0` here is only the
+     value before the shell has a header to measure. */
   top: 0;
   left: 0;
 }

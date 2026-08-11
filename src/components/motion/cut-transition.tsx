@@ -29,6 +29,33 @@ const COMB_TEETH = Array.from({ length: 13 }, (_, i) => `M${25 + i * 4.2} 58 V30
 const RISE = 15;
 
 /**
+ * The last bit of that distance, as a % of the viewport, spent CATCHING UP to
+ * the real page's scroll speed rather than creeping at the riser's own.
+ *
+ * Landing the stand-in on the right pixel at progress 1 is only half of a
+ * seamless handoff, and the half that is easy to stop at. The riser is
+ * `position: fixed`, so while the cut runs the page behind the gap travels
+ * RISE% of a viewport across the hero's entire scroll — 0.15px for every pixel
+ * of scroll — while the real page it hands over to travels 1. Match the
+ * positions and the swap is still visible: the section behind the gap is
+ * creeping, and then in one frame it is moving at full scroll speed. At a
+ * normal flick that is ~7px per frame becoming ~50.
+ *
+ * So the rise is creep PLUS a small saturating term whose slope is exactly the
+ * shortfall (1 - creep's rate) at the seam and ~0 for the rest of the cut. Sum
+ * the two and the last pixel of the cut is already moving at the page's speed,
+ * so the destroy-and-swap changes neither where anything is nor how fast it is
+ * going. tanh, not an ease: it must be monotonic (a curve that dips back would
+ * have the next section retreating as you scroll toward it) and it must have a
+ * known derivative at 0, which is what makes the match exact rather than tuned.
+ *
+ * 4% is ~33px at 900 tall. Big enough to absorb the speed change, small enough
+ * that the choreography above it is the one that was art-directed: for the
+ * first 80% of the cut this adds under a pixel of movement per frame.
+ */
+const CATCH = 4;
+
+/**
  * THE signature moment — a VERTICAL cut, fused to the scroll in both directions.
  *
  * ONE PROGRESS DRIVES EVERYTHING. This is the whole design, and the first
@@ -251,7 +278,24 @@ export function CutTransition({ source = "#top" }: { source?: string }) {
           // 3 + 4. the page below rises and brightens into the gap, landing at
           // exactly 0 / 0 at progress 1 — which is what makes the handoff to the
           // real page invisible. See createRiser().
-          gsap.set(riser.inner, { y: (RISE / 100) * travel * (1 - p) });
+          //
+          // `left` is how much scroll the REAL page below still has to travel
+          // before it is where the riser is pretending it already is, so it is
+          // both the creep's input and the yardstick the catch-up matches. Taken
+          // off the trigger rather than assumed equal to `travel`: they are the
+          // same today only because the hero is exactly one viewport tall, and
+          // the header of this file explicitly invites giving it more height.
+          const span = self.end - self.start;
+          const left = span * (1 - p);
+          // Capped at 1: a hero short enough that RISE% of a viewport is more
+          // scroll than the whole range already arrives at the page's speed,
+          // and an uncapped rate would make the catch-up term negative — i.e.
+          // the page below sliding backwards as it lands.
+          const creepRate = span > 0 ? Math.min(((RISE / 100) * travel) / span, 1) : 1;
+          const catchUp = (CATCH / 100) * travel;
+          gsap.set(riser.inner, {
+            y: creepRate * left + catchUp * Math.tanh(((1 - creepRate) * left) / catchUp),
+          });
           gsap.set(riser.shade, { opacity: 1 - p });
         },
       });

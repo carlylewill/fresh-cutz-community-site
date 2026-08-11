@@ -1,4 +1,4 @@
-import { gsap } from "@/lib/motion";
+import { gsap, getScroller } from "@/lib/motion";
 
 /**
  * The shear mechanism, shared by <CutTransition /> and <ShearSplit />.
@@ -333,6 +333,27 @@ export function createRiser(
   const inner = document.createElement("div");
   inner.className = "cut-riser-inner";
   inner.style.width = `${after.getBoundingClientRect().width}px`;
+  /*
+   * WHERE `y: 0` PUTS THE PAGE BELOW — the one number the whole handoff hangs
+   * on, and the one this got wrong.
+   *
+   * `.cut-riser` is fixed to the WINDOW; the real page paints inside #scroller,
+   * which starts one header-height down. Left on the stylesheet's `top: 0` the
+   * stand-in therefore sits --nav-h ABOVE the thing it is standing in for, so
+   * the contract two paragraphs up ("at progress 1 this must be pixel-identical
+   * to the real thing") was broken by exactly the header's height, every time.
+   *
+   * Measured at 1440x900 before the fix: the next section painted at window y
+   * 0.3px at progress 0.998, and at 79px two pixels of scroll later once the
+   * riser was destroyed. An 81px downward snap the instant the cut finished —
+   * the jerk at the end of the hero.
+   *
+   * Read off the live element rather than var(--nav-h): this has to be the
+   * scroller's actual offset, and --nav-h is <Nav />'s measurement of itself,
+   * which is the same number only for as long as nothing else is ever a flex
+   * child of <body>.
+   */
+  inner.style.top = `${getScroller()?.getBoundingClientRect().top ?? 0}px`;
 
   // Enough siblings to fill the screen once, and no more. Cloning to the end of
   // the document would copy the whole page to show one viewport of it.
