@@ -37,7 +37,24 @@ export function HeroVideo() {
   useEffect(() => {
     // Reduced motion is the only gate now. The clip plays at both breakpoints —
     // it's 948K, and on mobile it's the whole brand moment.
-    setShowVideo(!window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // Mount the clip only after the page has loaded and the browser is idle, so
+    // its 2.3MB never competes with the poster (the LCP) or the first scripts.
+    // The poster is the same frame, so the handoff is unchanged.
+    let cancelled = false;
+    const start = () => {
+      const go = () => {
+        if (!cancelled) setShowVideo(true);
+      };
+      if ("requestIdleCallback" in window) window.requestIdleCallback(go, { timeout: 1500 });
+      else setTimeout(go, 300);
+    };
+    if (document.readyState === "complete") start();
+    else window.addEventListener("load", start, { once: true });
+    return () => {
+      cancelled = true;
+      window.removeEventListener("load", start);
+    };
   }, []);
 
   return (

@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  images: { formats: ["image/avif", "image/webp"] },
   experimental: {
+    inlineCss: true,
     // Both apex and www resolve to this project; Server Actions verify Origin
     // against this list, so a missing entry rejects legitimate form posts.
     serverActions: {
