@@ -1,4 +1,11 @@
 import { createBookingCore } from "@/lib/bookings/service";
+import {
+  checkGuard,
+  clientIp,
+  GUARD_ERROR,
+  HONEYPOT_FIELD,
+  STARTED_FIELD,
+} from "@/lib/bookings/spam-guard";
 
 // The booking form posts through the Server Action, not this route — Next
 // verifies Origin on actions, and this endpoint has no such protection. It
@@ -13,6 +20,20 @@ export async function POST(request: Request): Promise<Response> {
     body = await request.json();
   } catch {
     return Response.json({ ok: false, error: "Expected a JSON body." }, { status: 400 });
+  }
+
+  const rec = (body && typeof body === "object" ? body : {}) as Record<string, unknown>;
+  const blocked = checkGuard({
+    honeypot: rec[HONEYPOT_FIELD],
+    startedAt: rec[STARTED_FIELD],
+    origin: request.headers.get("origin"),
+    ip: clientIp(request.headers),
+  });
+  if (blocked) {
+    return Response.json(
+      { ok: false, error: GUARD_ERROR },
+      { status: blocked === "rate" ? 429 : 400 },
+    );
   }
 
   const result = await createBookingCore(body);

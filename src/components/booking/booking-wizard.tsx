@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { SERVICES, BARBERS, SHOP } from "@/lib/services";
 import { Magnetic } from "@/components/motion/magnetic";
 import { createBookingAction, type BookingFormState } from "@/actions/bookings";
@@ -20,6 +20,9 @@ export function BookingWizard({ whatsappEnabled }: { whatsappEnabled: boolean })
   const [barber, setBarber] = useState<string | null>(null);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("14:00");
+  // Render timestamp for the server-side minimum-fill-time check (set after mount to avoid a hydration mismatch).
+  const [startedAt, setStartedAt] = useState("");
+  useEffect(() => setStartedAt(String(Date.now())), []);
   const [state, formAction, pending] = useActionState(createBookingAction, initialState);
 
   const sent = state.status === "sent";
@@ -116,6 +119,28 @@ export function BookingWizard({ whatsappEnabled }: { whatsappEnabled: boolean })
           </div>
         ) : (
           <form action={formAction}>
+            <input type="hidden" name="formStartedAt" value={startedAt} />
+            <div
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                left: "-9999px",
+                width: 1,
+                height: 1,
+                overflow: "hidden",
+              }}
+            >
+              <label>
+                Leave this field empty
+                <input
+                  type="text"
+                  name="website"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  defaultValue=""
+                />
+              </label>
+            </div>
             {/* Carried across steps: only the visible panel changes, so these
                 must be hidden inputs rather than per-panel fields. */}
             {picked.map((id) => (

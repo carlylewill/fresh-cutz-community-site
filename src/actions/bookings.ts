@@ -1,6 +1,14 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import {
+  checkGuard,
+  clientIp,
+  GUARD_ERROR,
+  HONEYPOT_FIELD,
+  STARTED_FIELD,
+} from "@/lib/bookings/spam-guard";
 import {
   createBookingCore,
   approveBookingCore,
@@ -34,6 +42,15 @@ export async function createBookingAction(
   _prevState: BookingFormState,
   formData: FormData,
 ): Promise<BookingFormState> {
+  const h = await headers();
+  const blocked = checkGuard({
+    honeypot: formData.get(HONEYPOT_FIELD),
+    startedAt: formData.get(STARTED_FIELD),
+    origin: h.get("origin"),
+    ip: clientIp(h),
+  });
+  if (blocked) return { status: "error", error: GUARD_ERROR };
+
   const result = await createBookingCore({
     customerName: field(formData, "customerName").trim(),
     customerEmail: field(formData, "customerEmail").trim(),
