@@ -89,6 +89,10 @@ export function Preloader({ onDone }: { onDone: () => void }) {
         .set(root.current, { pointerEvents: "none" }, "<")
         .set(root.current, { display: "none" });
 
+      // Nov 2026 speed pass: same sequence, played back at whatever speed
+      // makes the whole loader take ~0.6s (was ~1.5s). First visit per session only.
+      tl.timeScale(tl.duration() / 0.6);
+
       lenis?.stop();
       lockScroll(true);
 
